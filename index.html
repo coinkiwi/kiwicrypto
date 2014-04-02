@@ -97,10 +97,11 @@ for single-page AngularJS/Javascript applications. </p>
 <pre><code>bower install kiwicrypto --save
 </code></pre>
 
-<p>To use it, import the main module:</p>
+<p>To use it in CoffeeScript, import the module you need:</p>
 
-<pre><code>var crypto = require("KiwiCrypto");
-var encodedString = crypto.Base64.stringToBase64("hello world");
+<pre><code>{ Base64 } = require 'Base64'
+encodedString = Base64.encode 'hello world'
+originalString = Base64.decode encodedString
 </code></pre>
 
 <p>See <a href="docs/index.html">API documentation</a> for more details.</p>
