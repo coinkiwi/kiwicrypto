@@ -68,10 +68,11 @@ To install it, use bower:
     bower install kiwicrypto --save
 
 
-To use it, import the main module:
+To use it, import the module you need:
 
-    var crypto = require("KiwiCrypto");
-    var encodedString = crypto.Base64.stringToBase64("hello world");
+    var Base64 = require("Base64");
+    var encodedString = Base64.encode("hello world"); // returns base64-encoded string
+    var originalString = Base64.decode(encodedString); // returns "hello world"
 
 See [API documentation](docs/index.html) for more details.
 
