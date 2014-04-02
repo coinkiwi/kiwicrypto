@@ -1,0 +1,2729 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>#</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="base64.html">
+                base64.coffee
+              </a>
+            
+              
+              <a class="source" href="bigint.html">
+                bigint.coffee
+              </a>
+            
+              
+              <a class="source" href="kiwicrypto.html">
+                kiwicrypto.coffee
+              </a>
+            
+              
+              <a class="source" href="random.html">
+                random.coffee
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="-">#</h1>
+<p>Author: Mariusz Nowostawski, and others. See AUTHORS.
+Copyright (C) 2014 Mariusz Nowostawski, and others. See LICENSE.</p>
+<h1 id="-">#</h1>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+
+<span class="hljs-string">'use strict'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Represents arbitrary precision integer numbers.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BigInt</span></span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>bits stored per array element
+AND this with an array element to chop it down to bpe bits
+equals 2^bpe.  A single 1 bit to the left of the last bit of mask.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  bpe = <span class="hljs-number">0</span>
+  mask = <span class="hljs-number">0</span>
+
+  radix = mask + <span class="hljs-number">1</span>
+  one = <span class="hljs-literal">undefined</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>the digits for converting to different bases</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  digitsStr = <span class="hljs-string">"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"</span> +
+              <span class="hljs-string">"_=!@#$%^&amp;*()[]{}|;:,.&lt;&gt;/?`~ \\\'\"+-"</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>the following global variables are scratchpad memory to
+reduce dynamic memory allocation in the inner loop</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  t = <span class="hljs-keyword">new</span> Array(<span class="hljs-number">0</span>)
+  ss = t  <span class="hljs-comment"># used in _mult_()</span>
+  s0 = t  <span class="hljs-comment"># used in _multMod_(), squareMod_()</span>
+  s1 = t  <span class="hljs-comment"># used in _powMod_(), multMod_(), squareMod_()</span>
+  s2 = t  <span class="hljs-comment"># used in _powMod_(), multMod_()</span>
+  s3 = t  <span class="hljs-comment"># used in _powMod_()</span>
+  s4 = s5 = t  <span class="hljs-comment"># used in _mod_()</span>
+  s6 = t  <span class="hljs-comment"># used in bigInt2str()</span>
+  s7 = t  <span class="hljs-comment"># used in _powMod_()</span>
+  T = t   <span class="hljs-comment"># used in _GCD_()</span>
+  sa = t  <span class="hljs-comment"># used in _mont_()</span>
+  mr_x1 = t
+  mr_r = t
+  mr_a = t <span class="hljs-comment"># used in millerRabin()</span>
+  eg_v = eg_u = eg_A = eg_B = eg_C = eg_D = t <span class="hljs-comment"># used in eGCD_(), inverseMod_()</span>
+
+  md_q1 = md_q2 = md_q3 = md_r = md_r1 = md_r2 = md_tt = t <span class="hljs-comment"># used in mod_()</span>
+
+  primes = pows = s_i = s_i2 = s_R = s_rm = s_q = s_n1 = t
+  s_a = s_r2 = s_n = s_b = s_d = s_x1 = s_x2 = s_aa = t
+
+  rpprb = t <span class="hljs-comment"># used in randProbPrimeRounds() (which also uses "primes")</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>initialize the global variables</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@init</span>: <span class="hljs-function"><span class="hljs-params">()</span> -&gt;</span>
+    bpe = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">while</span> (<span class="hljs-number">1</span> &lt;&lt; (bpe + <span class="hljs-number">1</span>)) &gt; (<span class="hljs-number">1</span> &lt;&lt; bpe)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>bpe=number of bits in the mantissa on this platform</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      bpe++</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>bpe=number of bits in one element of the array representing the bigInt</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    bpe &gt;&gt;= <span class="hljs-number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>AND the mask with an integer to get its bpe least significant bits</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    mask = (<span class="hljs-number">1</span> &lt;&lt; bpe) - <span class="hljs-number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>2^bpe.  a single 1 bit to the left of the first bit of mask</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    radix = mask + <span class="hljs-number">1</span>
+
+    one = <span class="hljs-property">@int2BigInt</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>)  <span class="hljs-comment"># constant used in _powMod_()</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>convert the integer t into a bigInt with at least the given number of bits.
+the returned array stores the bigInt in bpe-bit chunks, little endian
+(buff[0] is least significant word)
+Pad the array with leading zeros so that it has at least minSize elements.
+There will always be at least one leading 0 element.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@int2BigInt</span>: <span class="hljs-function"><span class="hljs-params">(t, bits, minSize = <span class="hljs-number">1</span>)</span> -&gt;</span>
+    k = Math.ceil(bits / bpe) + <span class="hljs-number">1</span>
+    k = minSize <span class="hljs-keyword">if</span> minSize &gt; k
+    buff = <span class="hljs-keyword">new</span> Array(k)
+    <span class="hljs-property">@_copyInt_</span>(buff, t)
+    <span class="hljs-keyword">return</span> buff</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>returns how many bits long the BigInt x is, not counting leading zeros.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@bitSize</span>: <span class="hljs-function"><span class="hljs-params">(x)</span> -&gt;</span>
+    j = <span class="hljs-literal">undefined</span>
+    z = <span class="hljs-literal">undefined</span>
+    w = <span class="hljs-literal">undefined</span>
+    j = x.length - <span class="hljs-number">1</span>
+    <span class="hljs-keyword">while</span> x[j] <span class="hljs-keyword">is</span> <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> j &gt; <span class="hljs-number">0</span>
+      j--
+    z = <span class="hljs-number">0</span>
+    w = x[j]
+    <span class="hljs-keyword">while</span> w &gt; <span class="hljs-number">0</span>
+      w &gt;&gt;= <span class="hljs-number">1</span>
+      z++
+
+    z += bpe * j
+    <span class="hljs-keyword">return</span> z</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>return the BigInt given a string representation in a given base.
+Pad the array with leading zeros so that it has at least minSize elements.
+If base=-1, then it reads in a space-separated list of array elements
+in decimal.
+The array will always have at least one leading zero, unless base=-1.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+  <span class="hljs-property">@str2BigInt</span>: <span class="hljs-function"><span class="hljs-params">(s, base = <span class="hljs-number">10</span>, minSize = <span class="hljs-number">1</span>)</span> -&gt;</span>
+    k = s.length
+    <span class="hljs-keyword">if</span> base <span class="hljs-keyword">is</span> -<span class="hljs-number">1</span> <span class="hljs-comment"># we have comma-separated list of array elements in decimal</span>
+      x = <span class="hljs-keyword">new</span> Array(<span class="hljs-number">0</span>)
+      stillSearching = <span class="hljs-literal">true</span>
+      <span class="hljs-keyword">while</span> stillSearching
+        y = <span class="hljs-keyword">new</span> Array(x.length + <span class="hljs-number">1</span>)
+        <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.x.length - <span class="hljs-number">1</span>]
+          y[i + <span class="hljs-number">1</span>] = x[i]
+        y[<span class="hljs-number">0</span>] = parseInt(s, <span class="hljs-number">10</span>)
+        x = y
+        d = s.indexOf(<span class="hljs-string">','</span>, <span class="hljs-number">0</span>)
+        <span class="hljs-keyword">if</span> d &lt; <span class="hljs-number">1</span>
+          stillSearching = <span class="hljs-literal">false</span>
+          <span class="hljs-keyword">break</span>
+        s = s.substring(d + <span class="hljs-number">1</span>)
+        <span class="hljs-keyword">if</span> s.length <span class="hljs-keyword">is</span> <span class="hljs-number">0</span>
+          stillSearching = <span class="hljs-literal">false</span>
+          <span class="hljs-keyword">break</span>
+
+      <span class="hljs-keyword">if</span> x.length &lt; minSize
+        y = <span class="hljs-keyword">new</span> Array(minSize)
+        <span class="hljs-property">@_copy_</span>(y, x)
+        <span class="hljs-keyword">return</span> y
+
+      <span class="hljs-keyword">return</span> x
+
+    x = <span class="hljs-property">@int2BigInt</span>(<span class="hljs-number">0</span>, base * k, <span class="hljs-number">0</span>)
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      d = digitsStr.indexOf(s.substring(i, i + <span class="hljs-number">1</span>), <span class="hljs-number">0</span>)
+      <span class="hljs-keyword">if</span> base &lt;= <span class="hljs-number">36</span> <span class="hljs-keyword">and</span> d &gt;= <span class="hljs-number">36</span> <span class="hljs-comment"># convert lowercase to uppercase if base &lt;= 36</span>
+        d -= <span class="hljs-number">26</span>
+      <span class="hljs-keyword">if</span> d &gt;= base <span class="hljs-keyword">or</span> d &lt; <span class="hljs-number">0</span> <span class="hljs-comment"># stop at first illegal character</span>
+        <span class="hljs-keyword">break</span>
+
+      <span class="hljs-property">@_multInt_</span>(x, base)
+      <span class="hljs-property">@_addInt_</span>(x, d)
+
+
+    k = x.length
+    <span class="hljs-keyword">while</span> k &gt; <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> x[k - <span class="hljs-number">1</span>] <span class="hljs-comment"># strip off leading zeros</span>
+      k--
+    <span class="hljs-keyword">if</span> minSize &gt; k + <span class="hljs-number">1</span> <span class="hljs-keyword">then</span> k = minSize
+    <span class="hljs-keyword">else</span> k = k + <span class="hljs-number">1</span>
+    y = <span class="hljs-keyword">new</span> Array(k)
+    <span class="hljs-keyword">if</span> k &lt; x.length <span class="hljs-keyword">then</span> kk = k
+    <span class="hljs-keyword">else</span> kk = x.length
+
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.kk - <span class="hljs-number">1</span>]
+      y[i] = x[i]
+
+    <span class="hljs-keyword">while</span> i &lt; k
+      y[i++] = <span class="hljs-number">0</span>
+
+    <span class="hljs-keyword">return</span> y</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>is bigint x equal to integer y?
+y must have less than bpe bits
+@param x [BigInt]
+@param y [Integer]
+@return [true, false]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@equalsInt</span>: <span class="hljs-function"><span class="hljs-params">(x,y)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x[<span class="hljs-number">0</span>] <span class="hljs-keyword">isnt</span> y
+      <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">1.</span>.x.length - <span class="hljs-number">1</span>]
+      <span class="hljs-keyword">if</span> x[i] <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>are bigints x and y equal?
+this works even if x and y are different lengths and have arbitrarily
+many leading zeros
+@param x [BigInt]
+@param y [BigInt]
+@return [true, false]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@equals</span>: <span class="hljs-function"><span class="hljs-params">(x,y)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x.length &lt; y.length <span class="hljs-keyword">then</span> k = x.length <span class="hljs-keyword">else</span> k = y.length
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      <span class="hljs-keyword">if</span> x[i] <span class="hljs-keyword">isnt</span> y[i]
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    <span class="hljs-keyword">if</span> x.length &gt; y.length
+      <span class="hljs-keyword">while</span> i &lt; x.length
+        <span class="hljs-keyword">if</span> x[i++] <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    <span class="hljs-keyword">else</span>
+      <span class="hljs-keyword">while</span> i &lt; y.length
+        <span class="hljs-keyword">if</span> y[i++] <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>is the bigInt x equal to zero?
+@param x [BigInt]
+@return [true, false]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@isZero</span>: <span class="hljs-function"><span class="hljs-params">(x)</span> -&gt;</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.x.length - <span class="hljs-number">1</span>]
+      <span class="hljs-keyword">if</span> x[i] <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>convert a bigInt into a string in a given base, from base 2 up to base 95.
+Base -1 prints the contents of the array representing the number.
+@param x [BigInt]
+@param base [Integer] base of the number
+@return [string]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@BigInt2str</span>: <span class="hljs-function"><span class="hljs-params">(x, base = <span class="hljs-number">10</span>)</span> -&gt;</span>
+    s = <span class="hljs-string">''</span>
+    <span class="hljs-keyword">if</span> s6.length <span class="hljs-keyword">isnt</span> x.length <span class="hljs-keyword">then</span> s6 = <span class="hljs-property">@dup</span>(x)
+    <span class="hljs-keyword">else</span> <span class="hljs-property">@_copy_</span>(s6, x)
+
+    <span class="hljs-keyword">if</span> base <span class="hljs-keyword">is</span> -<span class="hljs-number">1</span> <span class="hljs-comment"># return the list of array contents</span>
+      i = x.length - <span class="hljs-number">1</span>
+      <span class="hljs-keyword">while</span> i &gt; <span class="hljs-number">0</span>
+        s += x[i--] + <span class="hljs-string">','</span>
+        s += x[<span class="hljs-number">0</span>]
+    <span class="hljs-keyword">else</span> <span class="hljs-comment"># return the number in the given base</span>
+      <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> <span class="hljs-property">@isZero</span>(s6)
+        t = <span class="hljs-property">@_divInt_</span>(s6, base) <span class="hljs-comment"># t=s6 % base; s6=floor(s6/base)</span>
+        s = digitsStr.substring(t, t + <span class="hljs-number">1</span>) + s
+
+    <span class="hljs-keyword">if</span> s.length == <span class="hljs-number">0</span>
+      s = <span class="hljs-string">'0'</span>
+
+    <span class="hljs-keyword">return</span> s</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>return a copy of x with at least n elements, adding leading zeros if needed.
+@param x [BigInt]
+@param n [Integer]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@expand</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    l = n
+    l = x.length <span class="hljs-keyword">if</span> x.length &gt; n
+    ans = <span class="hljs-property">@int2BigInt</span>(<span class="hljs-number">0</span>, l * bpe, <span class="hljs-number">0</span>)
+    <span class="hljs-property">@_copy_</span>(ans, x)
+    <span class="hljs-keyword">return</span> ans</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <h6 id="-">#</h6>
+<h2 id="public-arithmetic-functions">Public arithmetic functions</h2>
+<h6 id="-">#</h6>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>Return a new bigInt equal to (x mod n) for bigInts x and n.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@mod</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    ans = <span class="hljs-property">@dup</span> x
+    <span class="hljs-property">@_mod_</span>(ans, n)
+    <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>return (x+y) for bigInts x and y.
+@param x [BigInt]
+@param y [BigInt]
+@return [BigInt] Sum of x and y.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@add</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    ans = <span class="hljs-property">@expand</span>(x, <span class="hljs-property">@_expandBufferLength_</span>(x, y))
+    <span class="hljs-property">@_add_</span>(ans, y)
+    <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>return (x+n) where x is a bigInt and n is an integer.
+@param x [BigInt]
+@param n [Integer]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@addInt</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    ans = <span class="hljs-property">@expand</span>(x, x.length + <span class="hljs-number">1</span>)
+    <span class="hljs-property">@_addInt_</span>(ans, n)
+    <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>return x * y for bigInts x and y. This is faster when y &lt; x.
+@param x [BigInt]
+@param y [BigInt]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@mult</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    ans = <span class="hljs-property">@expand</span>(x, x.length + y.length)
+    <span class="hljs-property">@_mult_</span>(ans, y)
+    <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>Returns (x<strong>y mod n) where x,y,n are bigInts and </strong> is exponentiation.
+0<strong>0=1. Faster for odd n.
+@param x [BigInt]
+@param y [BigInt]
+@param n [BigInt]
+@return [BigInt] x</strong>y mod n</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@powMod</span>: <span class="hljs-function"><span class="hljs-params">(x, y, n)</span> -&gt;</span>
+    ans = <span class="hljs-property">@expand</span>(x, n.length)
+    <span class="hljs-property">@_powMod_</span>(ans, <span class="hljs-property">@trim</span>(y, <span class="hljs-number">2</span>), <span class="hljs-property">@trim</span>(n, <span class="hljs-number">2</span>), <span class="hljs-number">0</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>this should work without the trim, but doesn’t</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>return (x-y) for bigInts x and y.  Negative answers will be 2s complement.
+@param x [BigInt]
+@param y [BigInt]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@sub</span>: <span class="hljs-function"><span class="hljs-params">(x,y)</span> -&gt;</span>
+    ans = <span class="hljs-property">@expand</span>(x, <span class="hljs-property">@_expandBufferLength_</span>(x, y))
+    <span class="hljs-property">@_sub_</span>(ans,y)
+    <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>Returns (x**(-1) mod n) for bigInts x and n.  If no inverse exists,
+it returns null.
+@param x [BigInt]
+@param n [BigInt]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@inverseMod</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    ans = <span class="hljs-property">@expand</span>(x, n.length)
+    s = <span class="hljs-property">@_inverseMod_</span>(ans, n)
+    <span class="hljs-keyword">return</span> <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>) <span class="hljs-keyword">if</span> s
+    <span class="hljs-literal">null</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>Returns (x*y mod n) for bigInts x,y,n.  For greater speed, assume y &lt; x.
+@param x [BigInt]
+@param y [BigInt]
+@param n [BigInt]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@multMod</span>: <span class="hljs-function"><span class="hljs-params">(x, y, n)</span> -&gt;</span>
+    ans = <span class="hljs-property">@expand</span>(x, n.length)
+    <span class="hljs-property">@_multMod_</span>(ans, y, n)
+    <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>is bigInt x negative?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@negative</span>: <span class="hljs-function"><span class="hljs-params">(x)</span> -&gt;</span>
+    (x[x.length - <span class="hljs-number">1</span>] &gt;&gt; (bpe - <span class="hljs-number">1</span>)) &amp; <span class="hljs-number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>is x &gt; y? (x and y both nonnegative)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@greater</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x.length &lt; y.length <span class="hljs-keyword">then</span> k = x.length <span class="hljs-keyword">else</span> k = y.length
+    i = x.length
+    <span class="hljs-keyword">while</span> i &lt; y.length
+      <span class="hljs-keyword">if</span> y[i++]
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span> <span class="hljs-comment"># y has more digits</span>
+
+    i = y.length
+    <span class="hljs-keyword">while</span> i &lt; x.length
+      <span class="hljs-keyword">if</span> x[i++]
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>  <span class="hljs-comment"># x has more digits</span>
+
+    i = k - <span class="hljs-number">1</span>
+    <span class="hljs-keyword">while</span> i &gt;= <span class="hljs-number">0</span>
+      <span class="hljs-keyword">if</span> (x[i] &gt; y[i])
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>
+      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> x[i] &lt; y[i]
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+      i--
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <h6 id="-">#</h6>
+<h2 id="utility-private-arithmetic-functions">Utility/Private arithmetic functions</h2>
+<h6 id="-">#</h6>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>Do x = x * n where x is a bigInt and n is an integer.
+x must be large enough to hold the result.
+@param x [BigInt]
+@param n [Integer]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_multInt_</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> n
+      <span class="hljs-keyword">return</span>
+    k = x.length
+    c = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      c += x[i] * n
+      b = <span class="hljs-number">0</span>
+      <span class="hljs-keyword">if</span> c &lt; <span class="hljs-number">0</span>
+        b = -(c &gt;&gt; bpe)
+        c += b * radix
+
+      x[i] = c &amp; mask
+      c= (c &gt;&gt; bpe) - b</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p>Do x = x - y for BigInts x and y.
+x must be large enough to hold the answer.
+negative answers will be 2s complement
+@param x [BigInt]
+@param y [BigInt]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_sub_</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x.length &lt; y.length <span class="hljs-keyword">then</span> k = x.length <span class="hljs-keyword">else</span> k = y.length
+    c = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      c += x[i] - y[i]
+      x[i] = c &amp; mask
+      c &gt;&gt;= bpe
+
+    i = k
+    <span class="hljs-keyword">while</span> c <span class="hljs-keyword">and</span> i &lt; x.length
+      c += x[i]
+      x[i++] = c &amp; mask
+      c &gt;&gt;= bpe</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <p>do x = x + y for bigInts x and y.
+x must be large enough to hold the answer.
+@param x [BigInt]
+@param y [BigInt]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_add_</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x.length &lt; y.length <span class="hljs-keyword">then</span> k = x.length <span class="hljs-keyword">else</span> k = y.length
+    c = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      c += x[i] + y[i]
+      x[i] = c &amp; mask
+      c &gt;&gt;= bpe
+
+    i = k
+    <span class="hljs-keyword">while</span> c <span class="hljs-keyword">and</span>  i &lt; x.length
+      c += x[i]
+      x[i++] = c &amp; mask
+      c &gt;&gt;= bpe</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>do x = x+n where x is a bigInt and n is an integer.
+x must be large enough to hold the result.
+@param x [BigInt]
+@param n [Integer]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_addInt_</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    x[<span class="hljs-number">0</span>] += n
+    k = x.length
+    c = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      c += x[i]
+      b = <span class="hljs-number">0</span>
+      <span class="hljs-keyword">if</span> c &lt; <span class="hljs-number">0</span>
+        b = -(c &gt;&gt; bpe)
+        c += b * radix
+
+      x[i] = c &amp; mask
+      c = (c &gt;&gt; bpe) - b
+      <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> c
+        <span class="hljs-keyword">return</span> <span class="hljs-comment"># stop carrying as soon as the carry is zero</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>do x=x*y for bigInts x and y.  This is faster when y&lt;x.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_mult_</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> ss.length <span class="hljs-keyword">isnt</span> <span class="hljs-number">2</span> * x.length
+      ss = <span class="hljs-keyword">new</span> Array(<span class="hljs-number">2</span> * x.length)
+    <span class="hljs-property">@_copyInt_</span>(ss, <span class="hljs-number">0</span>)
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.y.length - <span class="hljs-number">1</span>]
+      <span class="hljs-keyword">if</span> y[i]
+        <span class="hljs-property">@_linCombShift_</span>(ss, x, y[i], i)  <span class="hljs-comment"># ss=1*ss+y[i]*(x&lt;&lt;(i*bpe))</span>
+    <span class="hljs-property">@_copy_</span>(x, ss)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>do x=x mod n for bigInts x and n.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_mod_</span>: <span class="hljs-function"><span class="hljs-params">(x,n)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> s4.length <span class="hljs-keyword">isnt</span> x.length
+      s4 = dup(x)
+    <span class="hljs-keyword">else</span>
+      <span class="hljs-property">@_copy_</span>(s4, x)
+    <span class="hljs-keyword">if</span> s5.length <span class="hljs-keyword">isnt</span> x.length
+      s5 = dup(x)
+    <span class="hljs-property">@_divide_</span>(s4, n, s5, x) <span class="hljs-comment"># x = remainder of s4 / n</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p>do x=x*y mod n for bigInts x,y,n.
+for greater speed, assume y &lt; x</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_multMod_</span>: <span class="hljs-function"><span class="hljs-params">(x,y,n)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> s0.length <span class="hljs-keyword">isnt</span> <span class="hljs-number">2</span> * x.length
+      s0 = <span class="hljs-keyword">new</span> Array(<span class="hljs-number">2</span> * x.length)
+    <span class="hljs-property">@_copyInt_</span>(s0, <span class="hljs-number">0</span>)
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.y.length - <span class="hljs-number">1</span>]
+      <span class="hljs-keyword">if</span> y[i]
+        <span class="hljs-property">@_linCombShift_</span>(s0, x, y[i], i) <span class="hljs-comment"># s0=1*s0+y[i]*(x&lt;&lt;(i*bpe))</span>
+    <span class="hljs-property">@_mod_</span>(s0, n)
+    <span class="hljs-property">@_copy_</span>(x, s0)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>do x = floor(x/n) for bigInt x and integer n, and return the remainder
+@param x [BigInt]
+@param n [Integer]
+@return [Integer]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_divInt_</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    r = <span class="hljs-number">0</span>
+    i = x.length - <span class="hljs-number">1</span>
+    <span class="hljs-keyword">while</span> i &gt;= <span class="hljs-number">0</span>
+      s = r * radix + x[i]
+      x[i] = Math.floor(s / n)
+      r = s % n
+      i--
+    <span class="hljs-keyword">return</span> r</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <p>divide x by y giving quotient q and remainder r.
+(q=floor(x/y),  r=x mod y).  All 4 are bigints.
+x must have at least one leading zero element.
+y must be nonzero.
+q and r must be arrays that are exactly the same length as x.
+(Or q can have more). Must have x.length &gt;= y.length &gt;= 2.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_divide_</span>: <span class="hljs-function"><span class="hljs-params">(x, y, q, r)</span> -&gt;</span>
+    <span class="hljs-property">@_copy_</span>(r, x)
+    ky = y.length
+    <span class="hljs-keyword">while</span> y[ky - <span class="hljs-number">1</span>] <span class="hljs-keyword">is</span> <span class="hljs-number">0</span>
+      ky-- <span class="hljs-comment"># ky is number of elements in y, not including leading zeros</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p>normalize: ensure the most significant element of y has highest bit set</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    b = y[ky - <span class="hljs-number">1</span>]
+    a = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">while</span> b
+      a++
+      b &gt;&gt;= <span class="hljs-number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>a is how many bits to shift so that the high order
+bit of y is leftmost in its array element</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    a = bpe - a</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p>multiply both by 1&lt;&lt;a now, then divide both by that at the end</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-property">@_leftShift_</span>(y, a)
+    <span class="hljs-property">@_leftShift_</span>(r, a)
+
+    kx = r.length
+    <span class="hljs-keyword">while</span> r[kx - <span class="hljs-number">1</span>] <span class="hljs-keyword">is</span> <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> kx &gt; ky
+      kx--</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <p>kx is number of elements in normalized x, not including leading zeros</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+    <span class="hljs-property">@_copyInt_</span>(q, <span class="hljs-number">0</span>) <span class="hljs-comment"># q = 0</span>
+    <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> greaterShift(y, r, kx - ky)
+      <span class="hljs-property">@_subShift_</span>(r, y, kx - ky)
+      q[kx - ky]++
+
+
+    i = kx
+    <span class="hljs-keyword">while</span> (i - <span class="hljs-number">1</span>) &gt;= ky
+      i--
+      <span class="hljs-keyword">if</span> r[i] <span class="hljs-keyword">is</span> y[ky - <span class="hljs-number">1</span>]
+        q[i - ky] = mask
+      <span class="hljs-keyword">else</span>
+        q[i - ky] = Math.floor((r[i] * radix + r[i - <span class="hljs-number">1</span>]) / y[ky - <span class="hljs-number">1</span>])
+
+
+      <span class="hljs-keyword">while</span> <span class="hljs-literal">true</span>
+        y2 = <span class="hljs-number">0</span>
+        y2 = y[ky - <span class="hljs-number">2</span>] * q[i - ky] <span class="hljs-keyword">if</span> ky &gt; <span class="hljs-number">1</span>
+        c = y2 &gt;&gt; bpe
+        y2 = y2 &amp; mask
+        y1 = c + q[i - ky] * y[ky - <span class="hljs-number">1</span>]
+        c = y1 &gt;&gt; bpe
+        y1 = y1 &amp; mask
+
+        res = <span class="hljs-literal">undefined</span>
+        <span class="hljs-keyword">if</span> c <span class="hljs-keyword">is</span> r[i]
+          <span class="hljs-keyword">if</span> y1 <span class="hljs-keyword">is</span> r[i - <span class="hljs-number">1</span>]
+            t = <span class="hljs-number">0</span>
+            t = r[i - <span class="hljs-number">2</span>] <span class="hljs-keyword">if</span> i &gt; <span class="hljs-number">1</span>
+            res = y2 &gt; t
+          <span class="hljs-keyword">else</span> res = y1 &gt; r[i - <span class="hljs-number">1</span>]
+        <span class="hljs-keyword">else</span> res = c &gt; r[i]
+        <span class="hljs-keyword">if</span> res
+          q[i - ky]--
+        <span class="hljs-keyword">else</span>
+          <span class="hljs-keyword">break</span>
+
+      <span class="hljs-property">@_linCombShift_</span>(r, y, -q[i - ky], i - ky)
+      <span class="hljs-keyword">if</span> negative(r)
+        <span class="hljs-property">@_addShift_</span>(r, y, i - ky)
+        q[i - ky]--
+
+    rightShift_(y, a)  <span class="hljs-comment"># undo the normalization step</span>
+    rightShift_(r, a)  <span class="hljs-comment"># undo the normalization step</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <p>do carries and borrows so each element of the bigInt x fits in bpe bits.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_carry_</span>: <span class="hljs-function"><span class="hljs-params">(x)</span> -&gt;</span>
+    k = x.length
+    c = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      c += x[i]
+      b = <span class="hljs-number">0</span>
+      <span class="hljs-keyword">if</span> c &lt; <span class="hljs-number">0</span>
+        b = -(c &gt;&gt; bpe)
+        c += b * radix
+
+      x[i] = c &amp; mask
+      c = (c &gt;&gt; bpe) - b</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <h6 id="-">#</h6>
+<h2 id="utility-functions">Utility functions</h2>
+<h6 id="-">#</h6>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <p>copy BigInt y to x. x must be an array at least as big as y (not counting
+the leading zeros in y).
+@param x [BigInt]
+@param y [BigInt]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_copy_</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x.length &lt; y.length <span class="hljs-keyword">then</span> k = x.length
+    <span class="hljs-keyword">else</span> k = y.length
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      x[i] = y[i]
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">if</span> k <span class="hljs-keyword">is</span> x.length
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [k..x.length - <span class="hljs-number">1</span>]
+      x[i] = <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              <p>copy integer y to BigInt x
+@param x [BigInt]
+@param n [Integer]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_copyInt_</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    c = n
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.x.length - <span class="hljs-number">1</span>]
+      x[i] = c &amp; mask
+      c &gt;&gt;= bpe</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <p>returns a duplicate of bigInt x
+@param x [BigInt]
+@return [BigInt]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@dup</span>: <span class="hljs-function"><span class="hljs-params">(x)</span> -&gt;</span>
+    buff = <span class="hljs-keyword">new</span> Array(x.length)
+    <span class="hljs-property">@_copy_</span>(buff, x)
+    <span class="hljs-keyword">return</span> buff</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              <p>return x with exactly k leading zero elements
+@param x [BiInt]
+@param k [Integer] the number of leading zeros</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@trim</span>: <span class="hljs-function"><span class="hljs-params">(x, k)</span> -&gt;</span>
+    i = x.length
+    <span class="hljs-keyword">while</span> i &gt; <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> x[i - <span class="hljs-number">1</span>] <span class="hljs-keyword">is</span> <span class="hljs-number">0</span>
+      i = i - <span class="hljs-number">1</span>
+    y = <span class="hljs-keyword">new</span> Array(i + k)
+    <span class="hljs-property">@_copy_</span>(y, x)
+    <span class="hljs-keyword">return</span> y</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-51">&#182;</a>
+              </div>
+              <p>Find all primes up to integer n</p>
+<p>@param n [integer] upper limit for primes
+@return [Array<integer>] an array of all primes less than integer n</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@findPrimes</span>: <span class="hljs-function"><span class="hljs-params">(n)</span> -&gt;</span>
+    s = <span class="hljs-keyword">new</span> Array(n)
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.n - <span class="hljs-number">1</span>]
+      s[i] = <span class="hljs-number">0</span>
+    s[<span class="hljs-number">0</span>] = <span class="hljs-number">2</span>
+    p = <span class="hljs-number">0</span> <span class="hljs-comment"># first p elements of s are primes, the rest are a sieve</span>
+    <span class="hljs-keyword">while</span> s[p] &lt; n  <span class="hljs-comment"># s[p] is the pth prime</span>
+      i = s[p] * s[p]
+      <span class="hljs-keyword">while</span> i &lt; n  <span class="hljs-comment"># mark multiples of s[p]</span>
+        s[i] = <span class="hljs-number">1</span>
+        i += s[p]
+      p++
+      s[p] = s[p - <span class="hljs-number">1</span>] + <span class="hljs-number">1</span>
+      <span class="hljs-keyword">while</span> s[p] &lt; n <span class="hljs-keyword">and</span> s[s[p]]
+        s[p]++  <span class="hljs-comment"># find next prime (where s[p] is 0)</span>
+    ans = <span class="hljs-keyword">new</span> Array(p)
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.p - <span class="hljs-number">1</span>]
+      ans[i] = s[i]
+
+    <span class="hljs-keyword">return</span> ans</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              <p>Conducts a single round of Miller-Rabin base b,
+consider x to be a possible prime?
+@param x [BigInt]
+@param b [integer] b &lt; x
+@return [true, false] returns true if x is possibly prime
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@millerRabinInt</span>: <span class="hljs-function"><span class="hljs-params">(x, b)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> mr_x1.length <span class="hljs-keyword">isnt</span> x.length
+      mr_x1 = dup x
+      mr_r = dup x
+      mr_a = dup x
+
+    <span class="hljs-property">@_copyInt_</span>(mr_a, b)
+    millerRabin(x, mr_a)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-53">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-53">&#182;</a>
+              </div>
+              <p>Based on a single round of Miller-Rabin base b
+indicates x to be a possible prime number?
+@param x [BigInt]
+@param b [BigInt] b &lt; x
+@return [true, false]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@millerRabin</span>: <span class="hljs-function"><span class="hljs-params">(x, b)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> mr_x1.length <span class="hljs-keyword">isnt</span> x.length
+      mr_x1 = dup x
+      mr_r = dup x
+      mr_a = dup x
+
+    <span class="hljs-property">@_copy_</span> mr_a, b
+    <span class="hljs-property">@_copy_</span> mr_r, x
+    <span class="hljs-property">@_copy_</span> mr_x1, x
+
+    addInt_ mr_r, -<span class="hljs-number">1</span>
+    addInt_ mr_x1, -<span class="hljs-number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-54">&#182;</a>
+              </div>
+              <p>s is the highest power of two that divides mr_r</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    k = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.mr_r.length - <span class="hljs-number">1</span>]
+      <span class="hljs-keyword">for</span> j <span class="hljs-keyword">in</span> [<span class="hljs-number">1.</span>.mask - <span class="hljs-number">1</span>]
+        <span class="hljs-keyword">if</span> x[i] &amp; j
+          s = <span class="hljs-literal">undefined</span>
+          s = k <span class="hljs-keyword">if</span> k &lt; mr_r.length + bpe
+          i = mr_r.length
+          j = mask
+        <span class="hljs-keyword">else</span>
+          k++
+
+    <span class="hljs-property">@_rightShift_</span>(mr_r, s) <span class="hljs-keyword">if</span> s?
+
+    powMod_ mr_a, mr_r, x
+
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> equalsInt(mr_a,<span class="hljs-number">1</span>) <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> equals(mr_a,mr_x1)
+      j = <span class="hljs-number">1</span>
+      <span class="hljs-keyword">while</span> j &lt;= s - <span class="hljs-number">1</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> equals(mr_a, mr_x1)
+        squareMod_(mr_a, x)
+        <span class="hljs-keyword">if</span> equalsInt(mr_a, <span class="hljs-number">1</span>)
+          <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+        j++
+
+      <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> equals(mr_a, mr_x1)
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-55">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-55">&#182;</a>
+              </div>
+              <p>do the linear combination x=a<em>x+b</em>y for bigInts x and y, and integers
+a and b.  x must be large enough to hold the answer.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_linComb_</span>: <span class="hljs-function"><span class="hljs-params">(x,y,a,b)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x.length &lt; y.length <span class="hljs-keyword">then</span> k = x.length <span class="hljs-keyword">else</span> k = y.length
+    kk = x.length
+    c = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.k - <span class="hljs-number">1</span>]
+      c += a * x[i] + b * y[i]
+      x[i] = c &amp; mask
+      c &gt;&gt;= bpe
+
+    i = k
+    <span class="hljs-keyword">while</span> i &lt; kk
+      c += a * x[i]
+      x[i++]= c &amp; mask
+      c &gt;&gt;= bpe</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-56">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-56">&#182;</a>
+              </div>
+              <p>do the linear combination x=a<em>x+b</em>(y&lt;&lt;(ys*bpe)) for bigInts x and y,
+and integers a, b and ys. x must be large enough to hold the answer.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_linCombShift_</span>: <span class="hljs-function"><span class="hljs-params">(x,y,b,ys)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x.length &lt; ys + y.length <span class="hljs-keyword">then</span> k = x.length <span class="hljs-keyword">else</span> k = ys + y.length
+    kk = x.length
+    c = <span class="hljs-number">0</span>; i = ys
+    <span class="hljs-keyword">while</span> i &lt; k
+      c += x[i] + b * y[i - ys]
+      x[i++] = c &amp; mask
+      c &gt;&gt;= bpe
+
+    i = k
+    <span class="hljs-keyword">while</span> c <span class="hljs-keyword">and</span> i &lt; kk
+      c += x[i]
+      x[i++] = c &amp; mask
+      c &gt;&gt;= bpe</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-57">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-57">&#182;</a>
+              </div>
+              <h6 id="-">#</h6>
+<h2 id="generate-random-bigint">Generate random BigInt</h2>
+<h6 id="-">#</h6>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-58">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-58">&#182;</a>
+              </div>
+              <p>return a k-bit true random prime using Maurer’s algorithm.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@randTruePrime</span>: <span class="hljs-function"><span class="hljs-params">(k)</span> -&gt;</span>
+    ans = int2bigInt(<span class="hljs-number">0</span>, k, <span class="hljs-number">0</span>)
+    randTruePrime_(ans, k)
+    <span class="hljs-property">@trim</span>(ans, <span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-59">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-59">&#182;</a>
+              </div>
+              <p>return a k-bit random probable prime with probability of error &lt; 2^-80</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@randProbPrime</span>: <span class="hljs-function"><span class="hljs-params">(k)</span> -&gt;</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-60">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-60">&#182;</a>
+              </div>
+              <p>numbers from HAC table 4.3</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">2</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">600</span>
+    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">4</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">550</span>
+    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">5</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">500</span>
+    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">6</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">400</span>
+    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">7</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">350</span>
+    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">9</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">300</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-61">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-61">&#182;</a>
+              </div>
+              <p>numbers from HAC table 4.4</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">12</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">250</span>
+    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">15</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">200</span>
+    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">18</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">150</span>
+    <span class="hljs-keyword">return</span> randProbPrimeRounds(k, <span class="hljs-number">27</span>) <span class="hljs-keyword">if</span> k &gt;= <span class="hljs-number">100</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-62">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-62">&#182;</a>
+              </div>
+              <p>number from HAC remark 4.26 (only an estimate)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    randProbPrimeRounds(k, <span class="hljs-number">40</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-63">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-63">&#182;</a>
+              </div>
+              <p>return a k-bit probable random prime using n rounds of
+Miller Rabin (after trial division with small primes)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@randProbPrimeRounds</span>: <span class="hljs-function"><span class="hljs-params">(k, n)</span> -&gt;</span>
+    B = <span class="hljs-number">30000</span>  <span class="hljs-comment"># B is largest prime to use in trial division</span>
+    ans = int2bigInt <span class="hljs-number">0</span>, k, <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-64">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-64">&#182;</a>
+              </div>
+              <p>optimization: try larger and smaller B to find the best limit.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> primes.length <span class="hljs-keyword">is</span> <span class="hljs-number">0</span>
+      primes = findPrimes(<span class="hljs-number">30000</span>)  <span class="hljs-comment"># check for divisibility by primes &lt;=30000</span>
+
+    <span class="hljs-keyword">if</span> rpprb.length <span class="hljs-keyword">isnt</span> ans.length
+      rpprb = dup ans
+
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">true</span> <span class="hljs-comment"># keep trying random values for ans until one appears to be prime</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-65">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-65">&#182;</a>
+              </div>
+              <p>optimization: pick a random number times L=2<em>3</em>5<em>…</em>p, plus a
+random element of the list of all numbers in [0,L) not divisible by any
+prime up to p. This can reduce the amount of random number generation.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+      <span class="hljs-property">@_randBigInt_</span>(ans, k, <span class="hljs-number">0</span>) <span class="hljs-comment"># ans = a random odd number to check</span>
+      ans[<span class="hljs-number">0</span>] |= <span class="hljs-number">1</span>
+      divisible = <span class="hljs-literal">false</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-66">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-66">&#182;</a>
+              </div>
+              <p>check ans for divisibility by small primes up to B</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      i = <span class="hljs-number">0</span>
+      <span class="hljs-keyword">while</span> i &lt; primes.length <span class="hljs-keyword">and</span> primes[i] &lt;= B
+        <span class="hljs-keyword">if</span> modInt(ans, primes[i]) <span class="hljs-keyword">is</span> <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> equalsInt(ans,primes[i])
+          divisible = <span class="hljs-literal">true</span>
+          <span class="hljs-keyword">break</span>
+        i++</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-67">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-67">&#182;</a>
+              </div>
+              <p>optimization: change millerRabin so the base can be bigger than the
+number being checked, then eliminate the while here.
+do n rounds of Miller Rabin, with random bases less than ans</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      i = <span class="hljs-number">0</span>
+      <span class="hljs-keyword">while</span> i &lt; n <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> divisible
+        <span class="hljs-property">@_randBigInt_</span>(rpprb, k, <span class="hljs-number">0</span>)
+        <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> greater(ans, rpprb) <span class="hljs-comment"># pick a random rpprb that's &lt; ans</span>
+          randBigInt_ rpprb, k, <span class="hljs-number">0</span>
+          <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> millerRabin(ans, rpprb)
+            divisible = <span class="hljs-literal">true</span>
+        i++
+
+      <span class="hljs-keyword">return</span> ans <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> divisible</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-68">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-68">&#182;</a>
+              </div>
+              <p>generate a k-bit true random prime using Maurer’s algorithm,
+and put it into ans.  The bigInt ans must be large enough to hold it.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_randTruePrime_</span>: <span class="hljs-function"><span class="hljs-params">(ans, k)</span> -&gt;</span>
+    primes = findPrimes <span class="hljs-number">30000</span> <span class="hljs-keyword">if</span> primes.length <span class="hljs-keyword">is</span> <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-69">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-69">&#182;</a>
+              </div>
+              <p>check for divisibility by primes &lt;= 30000</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> pows.length <span class="hljs-keyword">is</span> <span class="hljs-number">0</span>
+      pows = <span class="hljs-keyword">new</span> Array(<span class="hljs-number">512</span>)
+      <span class="hljs-keyword">for</span> j <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span><span class="hljs-number">.511</span>]
+        pows[j] = Math.pow(<span class="hljs-number">2</span>, j / <span class="hljs-number">511.0</span> - <span class="hljs-number">1.0</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-70">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-70">&#182;</a>
+              </div>
+              <p>c and m should be tuned for a particular machine and value of k,
+to maximize performance/speed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    c = <span class="hljs-number">0.1</span>  <span class="hljs-comment"># c=0.1 in HAC</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-71">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-71">&#182;</a>
+              </div>
+              <p>generate this k-bit number by first recursively generating
+a number that has between k/2 and k-m bits</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    m = <span class="hljs-number">20</span>
+    recLimit = <span class="hljs-number">20</span>  <span class="hljs-comment"># stop recursion when k &lt;=recLimit.  Must have recLimit &gt;= 2</span>
+
+    <span class="hljs-keyword">if</span> s_i2.length <span class="hljs-keyword">isnt</span> ans.length
+      s_i2  = dup ans
+      s_R   = dup ans
+      s_n1  = dup ans
+      s_r2  = dup ans
+      s_d   = dup ans
+      s_x1  = dup ans
+      s_x2  = dup ans
+      s_b   = dup ans
+      s_n   = dup ans
+      s_i   = dup ans
+      s_rm  = dup ans
+      s_q   = dup ans
+      s_a   = dup ans
+      s_aa  = dup ans
+
+    <span class="hljs-keyword">if</span> k &lt;= recLimit</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-72">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-72">&#182;</a>
+              </div>
+              <p>generate small random primes by trial division up to its square root
+pm is binary number with all ones, just over sqrt(2^k)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      pm = (<span class="hljs-number">1</span> &lt;&lt; ((k + <span class="hljs-number">2</span>) &gt;&gt; <span class="hljs-number">1</span>)) - <span class="hljs-number">1</span>
+      <span class="hljs-property">@_copyInt_</span> ans, <span class="hljs-number">0</span>
+      dd = <span class="hljs-number">1</span>
+      <span class="hljs-keyword">while</span> dd
+        dd = <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-73">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-73">&#182;</a>
+              </div>
+              <p>random, k-bit, odd integer, with msb 1</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        ans[<span class="hljs-number">0</span>] = <span class="hljs-number">1</span> | (<span class="hljs-number">1</span> &lt;&lt; (k - <span class="hljs-number">1</span>)) | Math.floor(Math.random() * (<span class="hljs-number">1</span> &lt;&lt; k))
+        j = <span class="hljs-number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-74">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-74">&#182;</a>
+              </div>
+              <p>trial division by all primes 3..sqrt(2^k)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">while</span> j &lt; primes.length <span class="hljs-keyword">and</span> (primes[j] &amp; pm) <span class="hljs-keyword">is</span> primes[j]
+          <span class="hljs-keyword">if</span> <span class="hljs-number">0</span> <span class="hljs-keyword">is</span> (ans[<span class="hljs-number">0</span>] % primes[j])
+            dd = <span class="hljs-number">1</span>
+            <span class="hljs-keyword">break</span>
+          j++
+
+      <span class="hljs-property">@_carry_</span> ans
+      <span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-75">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-75">&#182;</a>
+              </div>
+              <p>try small primes up to B (or all the primes[] array
+if the largest is less than B).</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    B = c * k * k</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-76">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-76">&#182;</a>
+              </div>
+              <p>generate this k-bit number by first recursively generating
+a number that has between k/2 and k-m bits</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> k &gt; <span class="hljs-number">2</span> * m
+      r = <span class="hljs-number">1</span>
+      <span class="hljs-keyword">while</span> k - k * r &lt;= m
+        r = pows[Math.floor(Math.random() * <span class="hljs-number">512</span>)]
+    <span class="hljs-keyword">else</span>
+      r = <span class="hljs-number">0.5</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-77">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-77">&#182;</a>
+              </div>
+              <p>simulation suggests the more complex algorithm using r = 0.333 is only
+slightly faster.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    recSize = Math.floor(r * k) + <span class="hljs-number">1</span>
+
+    <span class="hljs-property">@_randTruePrime_</span> s_q, recSize
+    <span class="hljs-property">@_copyInt_</span> s_i2, <span class="hljs-number">0</span>
+    s_i2[Math.floor((k - <span class="hljs-number">2</span>) / bpe)] |= (<span class="hljs-number">1</span> &lt;&lt; ((k - <span class="hljs-number">2</span>) % bpe))   <span class="hljs-comment"># s_i2=2^(k-2)</span>
+    divide_(s_i2, s_q, s_i, s_rm)                <span class="hljs-comment"># s_i=floor((2^(k-1))/(2q))</span>
+
+    z = bitSize(s_i)
+
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">true</span>
+      <span class="hljs-keyword">while</span> <span class="hljs-literal">true</span> <span class="hljs-comment"># generate z-bit numbers until one falls in the range [0,s_i-1]</span>
+        randBigInt_(s_R, z, <span class="hljs-number">0</span>)
+        <span class="hljs-keyword">if</span> greater(s_i, s_R)
+          <span class="hljs-keyword">break</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-78">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-78">&#182;</a>
+              </div>
+              <p>now s_R is in the range [0,s_i-1]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="hljs-property">@_addInt_</span>(s_R, <span class="hljs-number">1</span>)  <span class="hljs-comment"># now s_R is in the range [1,s_i]</span>
+      <span class="hljs-property">@_add_</span>(s_R, s_i)   <span class="hljs-comment"># now s_R is in the range [s_i+1,2*s_i]</span>
+
+      <span class="hljs-property">@_copy_</span>(s_n, s_q)
+      <span class="hljs-property">@_mult_</span>(s_n, s_R)
+      <span class="hljs-property">@_multInt_</span>(s_n, <span class="hljs-number">2</span>)
+      <span class="hljs-property">@_addInt_</span>(s_n, <span class="hljs-number">1</span>)    <span class="hljs-comment"># s_n=2*s_R*s_q+1</span>
+
+      <span class="hljs-property">@_copy_</span>(s_r2, s_R)
+      <span class="hljs-property">@_multInt_</span>(s_r2, <span class="hljs-number">2</span>)  <span class="hljs-comment"># s_r2=2*s_R</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-79">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-79">&#182;</a>
+              </div>
+              <p>check s_n for divisibility by small primes up to B</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      divisible = <span class="hljs-literal">false</span>
+      j = <span class="hljs-number">0</span>
+      <span class="hljs-keyword">while</span> j &lt; primes.length <span class="hljs-keyword">and</span> primes[j] &lt; B
+        <span class="hljs-keyword">if</span> modInt(s_n, primes[j]) <span class="hljs-keyword">is</span> <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> equalsInt(s_n, primes[j])
+          divisible = <span class="hljs-literal">true</span>
+          <span class="hljs-keyword">break</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-80">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-80">&#182;</a>
+              </div>
+              <p>if it passes small primes check, then try a single Miller-Rabin base 2</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> divisible</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-81">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-81">&#182;</a>
+              </div>
+              <p>this line represents 75% of the total runtime for <em>randTruePrime</em></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> millerRabinInt(s_n, <span class="hljs-number">2</span>)
+          divisible = <span class="hljs-literal">true</span>
+
+      <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> divisible  <span class="hljs-comment"># if it passes that test, continue checking s_n</span>
+        <span class="hljs-property">@_addInt_</span>(s_n, -<span class="hljs-number">3</span>)
+        j = s_n.length - <span class="hljs-number">1</span>
+        <span class="hljs-keyword">while</span> s_n[j] <span class="hljs-keyword">is</span> <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> j &gt; <span class="hljs-number">0</span> <span class="hljs-comment"># strip leading zeros</span>
+          zz = <span class="hljs-number">0</span>
+          w = s_n[j]
+          zz = <span class="hljs-number">0</span>
+          w = s_n[j]
+          <span class="hljs-keyword">while</span> w?
+            zz += bpe * j   <span class="hljs-comment"># zz=number of bits in s_n, ignoring leading zeros</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-82">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-82">&#182;</a>
+              </div>
+              <p>generate z-bit numbers until one falls in the range [0,s_n-1]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="hljs-keyword">while</span> <span class="hljs-literal">true</span>
+              <span class="hljs-property">@_randBigInt_</span>(s_a, zz, <span class="hljs-number">0</span>)
+              <span class="hljs-keyword">if</span> greater(s_n, s_a)
+                <span class="hljs-keyword">break</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-83">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-83">&#182;</a>
+              </div>
+              <p>now s_a is in the range [0,s_n-1]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="hljs-property">@_addInt_</span>(s_n, <span class="hljs-number">3</span>)  <span class="hljs-comment"># now s_a is in the range [0,s_n-4]</span>
+            <span class="hljs-property">@_addInt_</span>(s_a, <span class="hljs-number">2</span>)  <span class="hljs-comment"># now s_a is in the range [2,s_n-2]</span>
+            <span class="hljs-property">@_copy_</span>(s_b, s_a)
+            <span class="hljs-property">@_copy_</span>(s_n1, s_n)
+            <span class="hljs-property">@_addInt_</span>(s_n1, -<span class="hljs-number">1</span>)
+            <span class="hljs-property">@_powMod_</span>(s_b, s_n1, s_n)   <span class="hljs-comment"># s_b=s_a^(s_n-1) modulo s_n</span>
+            <span class="hljs-property">@_addInt_</span>(s_b, -<span class="hljs-number">1</span>)
+            <span class="hljs-keyword">if</span> isZero(s_b)
+              copy_(s_b, s_a)
+              powMod_(s_b, s_r2, s_n)
+              addInt_(s_b, -<span class="hljs-number">1</span>)
+              copy_(s_aa, s_n)
+              copy_(s_d, s_b)
+              GCD_(s_d, s_n) <span class="hljs-comment"># if s_b and s_n are relatively prime,</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-84">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-84">&#182;</a>
+              </div>
+              <p>then s_n is prime too</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>              <span class="hljs-keyword">if</span> equalsInt(s_d, <span class="hljs-number">1</span>)
+                <span class="hljs-property">@_copy_</span> ans, s_aa
+                <span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-85">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-85">&#182;</a>
+              </div>
+              <p>if we’ve made it this far, then s_n is guaranteed
+to be prime</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            w &gt;&gt;= <span class="hljs-number">1</span>
+            zz++
+          j--</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-86">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-86">&#182;</a>
+              </div>
+              <p>Returns an n-bit random BigInt (n &gt;= 1).
+If s is true, then the most significant of those n bits is set to 1.
+@param n [Integer]
+@param s [true, false]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@randBigInt</span>: <span class="hljs-function"><span class="hljs-params">(n, s)</span> -&gt;</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-87">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-87">&#182;</a>
+              </div>
+              <p>numb of array elements to hold the BigInt with a leading 0 element</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    a = Math.floor((n - <span class="hljs-number">1</span>) / bpe) + <span class="hljs-number">2</span>
+    b = int2bigInt(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, a)
+    <span class="hljs-property">@_randBigInt_</span>(b, n, s)
+    <span class="hljs-keyword">return</span> b</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-88">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-88">&#182;</a>
+              </div>
+              <p>Set b to an n-bit random BigInt.  If s is true, then the most significant
+of those n bits is set to 1.
+Array b must be big enough to hold the result. Must have n &gt;= 1</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_randBigInt_</span>: <span class="hljs-function"><span class="hljs-params">(b, n, s)</span> -&gt;</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.b.length - <span class="hljs-number">1</span>]
+      b[i] = <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-89">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-89">&#182;</a>
+              </div>
+              <p>numb of array elements to hold the BigInt</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    a = Math.floor((n - <span class="hljs-number">1</span>) / bpe) + <span class="hljs-number">1</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.a - <span class="hljs-number">1</span>]
+      b[i] = Math.floor(Math.random() * (<span class="hljs-number">1</span> &lt;&lt; (bpe - <span class="hljs-number">1</span>)))
+
+    b[a - <span class="hljs-number">1</span>] &amp;= (<span class="hljs-number">2</span> &lt;&lt; ((n - <span class="hljs-number">1</span>) % bpe)) - <span class="hljs-number">1</span>
+    <span class="hljs-keyword">if</span> s
+      b[a - <span class="hljs-number">1</span>] |= (<span class="hljs-number">1</span> &lt;&lt; ((n - <span class="hljs-number">1</span>) % bpe))</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-90">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-90">&#182;</a>
+              </div>
+              <p>Returns the greatest common divisor of bigInts x and y
+(each with same number of elements).</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@GCD</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    xc = dup(x)
+    yc = dup(y)
+    <span class="hljs-property">@_GCD_</span>(xc, yc)
+    <span class="hljs-keyword">return</span> xc</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-91">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-91">&#182;</a>
+              </div>
+              <p>set x to the greatest common divisor of bigInts x and y
+(each with same number of elements).
+y is destroyed.</p>
+<p>@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_GCD_</span>: <span class="hljs-function"><span class="hljs-params">(x,y)</span> -&gt;</span>
+
+    <span class="hljs-keyword">if</span> T.length <span class="hljs-keyword">isnt</span> x.length
+      T = dup(x)
+
+    sing = <span class="hljs-number">1</span>
+    <span class="hljs-keyword">while</span> sing <span class="hljs-comment"># while y has nonzero elements other than y[0]</span>
+      sing = <span class="hljs-literal">false</span>
+      <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">1.</span>.y.length - <span class="hljs-number">1</span>] <span class="hljs-comment"># check if y has nonzero elements other than 0</span>
+        <span class="hljs-keyword">if</span> y[i]
+          sing = <span class="hljs-literal">true</span>
+          <span class="hljs-keyword">break</span>
+
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> sing
+          <span class="hljs-keyword">break</span> <span class="hljs-comment"># quit when y all zero elements except possibly y[0]</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-92">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-92">&#182;</a>
+              </div>
+              <p>find most significant element of x</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        i = x.length
+        <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> x[i] <span class="hljs-keyword">and</span> i &gt;= <span class="hljs-number">0</span>
+          i--
+
+        xp = x[i]; yp = y[i]
+        A = <span class="hljs-number">1</span>; B = <span class="hljs-number">0</span>; C = <span class="hljs-number">0</span>; D = <span class="hljs-number">1</span>
+
+        <span class="hljs-keyword">while</span> (yp + C) <span class="hljs-keyword">and</span> (yp + D)
+          q = Math.floor((xp + A) / (yp + C))
+          qp = Math.floor((xp + B) / (yp + D))
+          <span class="hljs-keyword">if</span> q <span class="hljs-keyword">isnt</span> qp
+            <span class="hljs-keyword">break</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-93">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-93">&#182;</a>
+              </div>
+              <p>do (A,B,xp, C,D,yp) = (C,D,yp, A,B,xp) - q*(0,0,0, C,D,yp)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          t = A - q * C; A = C; C = t
+          t = B - q * D; B = D; D = t
+          t = xp - q * yp; xp = yp; yp = t
+
+        <span class="hljs-keyword">if</span> B
+          <span class="hljs-property">@_copy_</span>(T,x)
+          <span class="hljs-property">@_linComb_</span>(x, y, A, B) <span class="hljs-comment"># x=A*x+B*y</span>
+          <span class="hljs-property">@_linComb_</span>(y, T, D, C) <span class="hljs-comment"># y=D*y+C*T</span>
+        <span class="hljs-keyword">else</span>
+          <span class="hljs-property">@_mod_</span>(x, y)
+          <span class="hljs-property">@_copy_</span>(T, x)
+          <span class="hljs-property">@_copy_</span>(x, y)
+          <span class="hljs-property">@_copy_</span>(y, T)
+
+    <span class="hljs-keyword">if</span> y[<span class="hljs-number">0</span>] <span class="hljs-keyword">is</span> <span class="hljs-number">0</span>
+      <span class="hljs-keyword">return</span>
+
+    t = <span class="hljs-property">@modInt</span>(x, y[<span class="hljs-number">0</span>])
+    <span class="hljs-property">@_copyInt_</span>(x, y[<span class="hljs-number">0</span>])
+    y[<span class="hljs-number">0</span>] = t
+    <span class="hljs-keyword">while</span> y[<span class="hljs-number">0</span>]
+      x[<span class="hljs-number">0</span>] %= y[<span class="hljs-number">0</span>]
+      t = x[<span class="hljs-number">0</span>]
+      x[<span class="hljs-number">0</span>] = y[<span class="hljs-number">0</span>]
+      y[<span class="hljs-number">0</span>] = t</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-94">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-94">&#182;</a>
+              </div>
+              <p>do x=x**(-1) mod n, for bigInts x and n.
+If no inverse exists, it sets x to zero and returns 0, else it returns 1.
+The x array must be at least as large as the n array.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_inverseMod_</span>: <span class="hljs-function"><span class="hljs-params">(x,n)</span> -&gt;</span>
+    k = <span class="hljs-number">1</span> + <span class="hljs-number">2</span> * Math.max(x.length, n.length)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-95">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-95">&#182;</a>
+              </div>
+              <p>if both inputs are even, then inverse doesn’t exist</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> x[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> n[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span>
+      <span class="hljs-property">@_copyInt_</span>(x, <span class="hljs-number">0</span>)
+      <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+
+    <span class="hljs-keyword">if</span> eg_u.length <span class="hljs-keyword">isnt</span> k
+      eg_u = <span class="hljs-keyword">new</span> Array(k)
+      eg_v = <span class="hljs-keyword">new</span> Array(k)
+      eg_A = <span class="hljs-keyword">new</span> Array(k)
+      eg_B = <span class="hljs-keyword">new</span> Array(k)
+      eg_C = <span class="hljs-keyword">new</span> Array(k)
+      eg_D = <span class="hljs-keyword">new</span> Array(k)
+
+
+    <span class="hljs-property">@_copy_</span>(eg_u, x)
+    <span class="hljs-property">@_copy_</span>(eg_v, n)
+    <span class="hljs-property">@_copyInt_</span>(eg_A, <span class="hljs-number">1</span>)
+    <span class="hljs-property">@_copyInt_</span>(eg_B, <span class="hljs-number">0</span>)
+    <span class="hljs-property">@_copyInt_</span>(eg_C, <span class="hljs-number">0</span>)
+    <span class="hljs-property">@_copyInt_</span>(eg_D, <span class="hljs-number">1</span>)
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">true</span>
+      <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> eg_u[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-comment"># while eg_u is even</span>
+        <span class="hljs-property">@_halve_</span>(eg_u)
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> eg_A[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> eg_B[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-comment"># if eg_A==eg_B==0 mod 2</span>
+          halve_(eg_A)
+          halve_(eg_B)
+        <span class="hljs-keyword">else</span>
+          add_(eg_A,n);  halve_(eg_A)
+          sub_(eg_B,x);  halve_(eg_B)
+
+      <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> eg_v[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-comment"># while eg_v is even</span>
+        halve_(eg_v)
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> eg_C[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> eg_D[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-comment"># if eg_C==eg_D==0 mod 2</span>
+          halve_(eg_C)
+          halve_(eg_D)
+        <span class="hljs-keyword">else</span>
+          add_(eg_C,n);  halve_(eg_C)
+          sub_(eg_D,x);  halve_(eg_D)
+
+      <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> greater(eg_v, eg_u) <span class="hljs-comment"># eg_v &lt;= eg_u</span>
+        sub_(eg_u, eg_v)
+        sub_(eg_A, eg_C)
+        sub_(eg_B, eg_D)
+      <span class="hljs-keyword">else</span> <span class="hljs-comment"># eg_v &gt; eg_u</span>
+        sub_(eg_v, eg_u)
+        sub_(eg_C, eg_A)
+        sub_(eg_D, eg_B)
+
+
+      <span class="hljs-keyword">if</span> equalsInt(eg_u, <span class="hljs-number">0</span>)
+        <span class="hljs-keyword">while</span> negative(eg_C) <span class="hljs-comment"># make sure answer is nonnegative</span>
+          add_(eg_C,n)
+          copy_(x,eg_C)
+
+          <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> equalsInt(eg_v,<span class="hljs-number">1</span>) <span class="hljs-comment"># if GCD_(x,n)!=1, then there is no inverse</span>
+            copyInt_(x, <span class="hljs-number">0</span>)
+            <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+
+        <span class="hljs-keyword">return</span> <span class="hljs-number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-96">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-96">&#182;</a>
+              </div>
+              <p>return x**(-1) mod n, for integers x and n.
+Return 0 if there is no inverse.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@inverseModInt</span>: <span class="hljs-function"><span class="hljs-params">(x, n)</span> -&gt;</span>
+    a = <span class="hljs-number">1</span>; b = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">true</span>
+      <span class="hljs-keyword">return</span> a <span class="hljs-keyword">if</span> x <span class="hljs-keyword">is</span> <span class="hljs-number">1</span>
+      <span class="hljs-keyword">return</span> <span class="hljs-number">0</span> <span class="hljs-keyword">if</span> x <span class="hljs-keyword">is</span> <span class="hljs-number">0</span>
+      b -= a * Math.floor(n / x)
+      n %= x</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-97">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-97">&#182;</a>
+              </div>
+              <p>to avoid negatives, change this b to n-b, and each -= to +=</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">return</span> b <span class="hljs-keyword">if</span> n <span class="hljs-keyword">is</span> <span class="hljs-number">1</span>
+      <span class="hljs-keyword">return</span> <span class="hljs-number">0</span> <span class="hljs-keyword">if</span> n <span class="hljs-keyword">is</span> <span class="hljs-number">0</span>
+      a -= b * Math.floor(x / n)
+      x %= n</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-98">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-98">&#182;</a>
+              </div>
+              <p>Given positive bigInts x and y, change the bigints v, a, and b
+to positive bigInts such that:
+    v = GCD_(x,y) = a<em>x-b</em>y
+The bigInts v, a, b, must have exactly as many elements as
+the larger of x and y.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_eGCD_</span>: <span class="hljs-function"><span class="hljs-params">(x, y, v, a, b)</span> -&gt;</span>
+    g = <span class="hljs-number">0</span>
+    k = Math.max(x.length,y.length)
+    <span class="hljs-keyword">if</span> eg_u.length <span class="hljs-keyword">isnt</span> k
+      eg_u = <span class="hljs-keyword">new</span> Array(k)
+      eg_A = <span class="hljs-keyword">new</span> Array(k)
+      eg_B = <span class="hljs-keyword">new</span> Array(k)
+      eg_C = <span class="hljs-keyword">new</span> Array(k)
+      eg_D = <span class="hljs-keyword">new</span> Array(k)
+
+    <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> x[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> y[<span class="hljs-number">0</span>]&amp; <span class="hljs-number">1</span> <span class="hljs-comment"># while x and y both even</span>
+      halve_(x)
+      halve_(y)
+      g++
+
+    <span class="hljs-property">@_copy_</span>(eg_u, x)
+    <span class="hljs-property">@_copy_</span>(v, y)
+    <span class="hljs-property">@_copyInt_</span>(eg_A, <span class="hljs-number">1</span>)
+    <span class="hljs-property">@_copyInt_</span>(eg_B, <span class="hljs-number">0</span>)
+    <span class="hljs-property">@_copyInt_</span>(eg_C, <span class="hljs-number">0</span>)
+    <span class="hljs-property">@_copyInt_</span>(eg_D, <span class="hljs-number">1</span>)
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">true</span>
+      <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> eg_u[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-comment"># while u is even</span>
+        halve_(eg_u)
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> eg_A[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> eg_B[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-comment"># if A==B==0 mod 2</span>
+          halve_(eg_A)
+          halve_(eg_B)
+        <span class="hljs-keyword">else</span>
+          add_(eg_A,y);  halve_(eg_A)
+          sub_(eg_B,x);  halve_(eg_B)
+
+      <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> v[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-comment"># while v is even</span>
+        halve_(v)
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> eg_C[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> eg_D[<span class="hljs-number">0</span>] &amp; <span class="hljs-number">1</span> <span class="hljs-comment"># if C==D==0 mod 2</span>
+          halve_(eg_C)
+          halve_(eg_D)
+        <span class="hljs-keyword">else</span>
+          add_(eg_C,y);  halve_(eg_C)
+          sub_(eg_D,x);  halve_(eg_D)
+
+      <span class="hljs-keyword">if</span> greater(v,eg_u) <span class="hljs-comment"># v&lt;=u</span>
+        sub_(eg_u, v)
+        sub_(eg_A, eg_C)
+        sub_(eg_B, eg_D)
+      <span class="hljs-keyword">else</span> <span class="hljs-comment"># v&gt;u</span>
+        sub_(v,eg_u)
+        sub_(eg_C,eg_A)
+        sub_(eg_D,eg_B)
+
+      <span class="hljs-keyword">if</span> equalsInt(eg_u, <span class="hljs-number">0</span>)
+        <span class="hljs-keyword">while</span> negative(eg_C) <span class="hljs-comment"># make sure a (C) is nonnegative</span>
+          add_(eg_C, y)
+          sub_(eg_D, x)
+
+        multInt_(eg_D,-<span class="hljs-number">1</span>) <span class="hljs-comment"># make sure b (D) is nonnegative</span>
+        copy_(a, eg_C)
+        copy_(b, eg_D)
+        leftShift_(v, g)
+        <span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-99">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-99">&#182;</a>
+              </div>
+              <p>is (x &lt;&lt; (shift*bpe)) &gt; y?
+x and y are nonnegative bigInts
+shift is a nonnegative integer</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@greaterShift</span>: <span class="hljs-function"><span class="hljs-params">(x, y, shift)</span> -&gt;</span>
+    kx = x.length
+    ky = y.length
+    <span class="hljs-keyword">if</span> (kx + shift) &lt; ky
+      k = kx + shift
+    <span class="hljs-keyword">else</span>
+      k = ky
+    i = ky - <span class="hljs-number">1</span> - shift
+    <span class="hljs-keyword">while</span> i &lt; kx &amp;&amp; i &gt;= <span class="hljs-number">0</span>
+      <span class="hljs-keyword">if</span> x[i] &gt; <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-100">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-100">&#182;</a>
+              </div>
+              <p>if there are nonzeros in x to the left of the first column of y,
+then x is bigger</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>
+      i++
+
+    i = kx - <span class="hljs-number">1</span> + shift
+    <span class="hljs-keyword">while</span> i &lt; ky
+      <span class="hljs-keyword">if</span> y[i] &gt; <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-101">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-101">&#182;</a>
+              </div>
+              <p>if there are nonzeros in y to the left of the first column of x,
+then x is not bigger</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+      i++
+    i = k - <span class="hljs-number">1</span>
+    <span class="hljs-keyword">while</span> i &gt;= shift
+      <span class="hljs-keyword">if</span> x[i - shift] &gt; y[i]
+        <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>
+      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> x[i - shift] &lt; y[i]
+        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+      i--
+    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-102">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-102">&#182;</a>
+              </div>
+              <p>Calculates which, x or y, is larger and adds 1 to the buffer length so
+that a new appropriately large BigInt can be allocated.
+@param x [BigInt]
+@param y [BigInt]
+@private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@_expandBufferLength_</span>: <span class="hljs-function"><span class="hljs-params">(x, y)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> x.length &gt; y.length
+      <span class="hljs-keyword">return</span> x.length + <span class="hljs-number">1</span>
+    <span class="hljs-keyword">else</span>
+      <span class="hljs-keyword">return</span> y.length + <span class="hljs-number">1</span>
+
+
+<span class="hljs-built_in">exports</span>.BigInt = BigInt</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-103">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-103">&#182;</a>
+              </div>
+              <p>Original code in JavaScript by Leemon Baird,
+www.leemon.com, 2000</p>
+<p>Original Leemon Baird disclaimer</p>
+<p>This file is public domain. You can use it for any purpose without restriction
+I do not guarantee that it is correct, so use it at your own risk.  If you use
+it for something interesting, I’d appreciate hearing about it.  If you find
+any bugs or make any improvements, I’d appreciate hearing about those too.
+It would also be nice if my name and URL were left in the comments.  But none
+of that is required.</p>
+<p>This code defines a bigInt library for arbitrary-precision integers.
+A bigInt is an array of integers storing the value in chunks of bpe bits,
+little endian (buff[0] is the least significant word).
+Negative bigInts are stored two’s complement.  Almost all the functions treat
+bigInts as nonnegative.  The few that view them as two’s complement say so
+in their comments.  Some functions assume their parameters have at least one
+leading zero element. Functions with an underscore at the end of the name put
+their answer into one of the arrays passed in, and have unpredictable behavior
+in case of overflow, so the caller must make sure the arrays are big enough to
+hold the answer.  But the average user should never have to call any of the
+underscored functions.  Each important underscored function has a wrapper
+function of the same name without the underscore that takes care of the
+details for you. For each underscored function where a parameter is modified,
+that same variable must not be used as another argument too.
+So, you cannot square x by doing
+multMod<em>(x,x,n).  You must use squareMod</em>(x,n) instead, or do y=dup(x);
+multMod_(x,y,n).
+Or simply use the multMod(x,x,n) function without the underscore, where
+such issues never arise, because non-underscored functions never change
+their parameters; they always allocate new memory for the answer that is
+returned.</p>
+<p>These functions are designed to avoid frequent dynamic memory allocation in
+the inner loop. For most functions, if it needs a BigInt as a local variable
+it will actually use a global, and will only allocate to it only when it’s not
+the right size.  This ensures that when a function is called repeatedly with
+same-sized parameters, it only allocates memory on the first call.</p>
+<p>Note that for cryptographic purposes, the calls to Math.random() must
+be replaced with calls to a better pseudorandom number generator.</p>
+<p>In the following, “bigInt” means a bigInt with at least one leading zero
+element, and “integer” means a nonnegative integer less than radix.  In some
+cases, integer can be negative.  Negative bigInts are 2s complement.</p>
+<p>The following functions do not modify their inputs.
+Those returning a bigInt, string, or Array will dynamically allocate memory
+for that value. Those returning a boolean will return the integer 0 (false)
+or 1 (true). Those returning boolean or int will not allocate memory except
+possibly on the first time they’re called with a given parameter size.</p>
+<p>bigInt  add(x,y)               //return (x+y) for bigInts x and y.
+bigInt  addInt(x,n)            //return (x+n) where x is a bigInt and n is an
+                                  integer.
+string  bigInt2str(x,base)     //return a string form of bigInt x in a given
+                                  base, with 2 &lt;= base &lt;= 95
+int     bitSize(x)             //return how many bits long the bigInt x is,
+                                  not counting leading zeros
+bigInt  dup(x)                 //return a copy of bigInt x
+boolean equals(x,y)            //is the bigInt x equal to the bigint y?
+boolean equalsInt(x,y)         //is bigint x equal to integer y?
+bigInt  expand(x,n)            //return a copy of x with at least n elements,
+                                  adding leading zeros if needed
+Array   findPrimes(n)          //return array of allprimes less than integer n
+bigInt  GCD(x,y)               //return greatest common divisor of bigInts x
+                                  and y (each with same number of elements).
+boolean greater(x,y)           //is x&gt;y?  (x and y are nonnegative bigInts)
+boolean greaterShift(x,y,shift)//is (x &lt;&lt;(shift<em>bpe)) &gt; y?
+bigInt  int2bigInt(t,n,m)      //return a bigInt equal to integer t, with at
+                                  least n bits and m array elements
+bigInt  inverseMod(x,n)        //return (x<strong>(-1) mod n) for bigInts x and n.
+                                  If no inverse exists, it returns null
+int     inverseModInt(x,n)     //return x</strong>(-1) mod n, for integers x and n.
+                                  Return 0 if there is no inverse
+boolean isZero(x)              //is the bigInt x equal to zero?
+boolean millerRabin(x,b)       //does one round of Miller-Rabin base integer b
+                     say that bigInt x is possibly prime? (b is bigInt, 1&lt;b&lt;x)
+boolean millerRabinInt(x,b)    //does one round of Miller-Rabin base integer b
+                     say that bigInt x is possibly prime? (b is int,    1&lt;b&lt;x)
+bigInt  mod(x,n)               //return a new bigInt equal to (x mod n) for
+                                  bigInts x and n.
+int     modInt(x,n)            //return x mod n for bigInt x and integer n.
+bigInt  mult(x,y)              //return x</em>y for bigInts x and y. This is
+                                  faster when y<x.
+bigInt  multMod(x,y,n)         //return (x*y mod n) for bigInts x,y,n.
+                                  For greater speed, let y<x.
+boolean negative(x)            //is bigInt x negative?
+bigInt  powMod(x,y,n)          //return (x**y mod n) where x,y,n are bigInts
+                          and ** is exponentiation.  0**0=1. Faster for odd n.
+bigInt  randBigInt(n,s)        //return an n-bit random BigInt (n>=1).
+                If s=1, then the most significant of those n bits is set to 1.
+bigInt  randTruePrime(k)       //return a new, random, k-bit, true prime
+                                  bigInt using Maurer’s algorithm.
+bigInt  randProbPrime(k)       //return a new, random, k-bit, probable prime
+                          bigInt (probability it’s composite less than 2^-80).
+bigInt  str2bigInt(s,b,n,m)    //return a bigInt for number represented in
+                string s in base b with at least n bits and m array elements
+bigInt  sub(x,y)               //return (x-y) for bigInts x and y.
+                    Negative answers will be 2s complement
+bigInt  trim(x,k)              //return a copy of x with exactly k leading
+                                  zero elements</p>
+<p>The following functions each have a non-underscored version, which most users
+should call instead. These functions each write to a single parameter, and the
+caller is responsible for ensuring the array passed in is large enough
+to hold the result.</p>
+<p>void    addInt<em>(x,n)        //do x=x+n where x is a bigInt and n is an integer
+void    add</em>(x,y)           //do x=x+y for bigInts x and y
+void    copy<em>(x,y)          //do x=y on bigInts x and y
+void    copyInt</em>(x,n)       //do x=n on bigInt x and integer n
+void    GCD<em>(x,y)           //set x to the greatest common divisor of bigInts
+              x and y, (y is destroyed).  (This never overflows its array).
+boolean inverseMod</em>(x,n)    //do x=x<strong>(-1) mod n, for bigInts x and n.
+                              Returns 1 (0) if inverse does (doesn’t) exist
+void    mod<em>(x,n)             //do x=x mod n for bigInts x and n.
+                                  (This never overflows its array).
+void    mult</em>(x,y)            //do x=x<em>y for bigInts x and y.
+void    multMod_(x,y,n)       //do x=x</em>y  mod n for bigInts x,y,n.
+void    powMod_(x,y,n)        //do x=x</strong>y mod n, where x,y,n are bigInts
+                                (n is odd) and <strong> is exponentiation.  0</strong>0=1.
+void    randBigInt<em>(b,n,s)    //do b = an n-bit random BigInt. if s=1, then
+                            nth bit (most significant bit) is set to 1. n&gt;=1.
+void    randTruePrime</em>(ans,k) //do ans = a random k-bit true random prime (not
+                                  just probable prime) with 1 in the msb.
+void    sub_(x,y)             //do x=x-y for bigInts x and y. Negative answers
+                                  will be 2s complement.</p>
+<p>The following functions do NOT have a non-underscored version.  They each
+write a bigInt result to one or more parameters.  The caller is responsible
+for ensuring the arrays passed in are large enough to hold the results.</p>
+<p>void addShift<em>(x,y,ys)       //do x=x+(y&lt;&lt;(ys*bpe))
+void carry</em>(x)               //do carries and borrows so each element of the
+                                bigInt x fits in bpe bits.
+void divide<em>(x,y,q,r)        //divide x by y giving quotient q and remainder r
+int  divInt</em>(x,n)            //do x=floor(x/n) for bigInt x and integer n, and
+                        return the remainder. (This never overflows its array)
+int  eGCD<em>(x,y,d,a,b)        //sets a,b,d to positive bigInts such that
+                                d = GCD</em>(x,y) = a<em>x-b</em>y
+void halve<em>(x)               //do x=floor(|x|/2)*sgn(x) for bigInt x in 2’s
+                                complement.  (This never overflows its array).
+void leftShift</em>(x,n)         //left shift bigInt x by n bits.  n&lt;bpe.
+void linComb<em>(x,y,a,b)       //do x=a<em>x+b</em>y for bigInts x and y and ints a/b
+void linCombShift</em>(x,y,b,ys) //do x=x+b<em>(y&lt;&lt;(ys</em>bpe)) for bigInts x and y,
+                                and integers b and ys
+void mont<em>(x,y,n,np)         //Montgomery multiplication (see comments where
+                                the function is defined)
+void multInt</em>(x,n)          //do x=x<em>n where x is a bigInt and n is an integer
+void rightShift<em>(x,n)       //right shift bigInt x by n bits.  0 &lt;= n &lt; bpe.
+                              (This never overflows its array).
+void squareMod</em>(x,n)        //do x=x</em>x  mod n for bigInts x,n
+void subShift_(x,y,ys)      //do x=x-(y&lt;&lt;(ys*bpe)). Negative answers will be
+                              2s complement.</p>
+<p>The following functions are based on algorithms from the
+<em>Handbook of Applied Cryptography</em> by B.Schneier</p>
+<p>   powMod<em>()           = algorithm 14.94, Montgomery exponentiation
+   eGCD</em>,inverseMod<em>() = algorithm 14.61, Binary extended GCD</em>
+   GCD<em>()              = algorothm 14.57, Lehmer’s algorithm
+   mont</em>()             = algorithm 14.36, Montgomery multiplication
+   divide<em>()           = algorithm 14.20  Multiple-precision division
+   squareMod</em>()        = algorithm 14.16  Multiple-precision squaring
+   randTruePrime_()    = algorithm  4.62, Maurer’s algorithm
+   millerRabin()       = algorithm  4.24, Miller-Rabin algorithm</p>
+<p>Profiling shows:
+    randTruePrime<em>() spends:
+        10% of its time in calls to powMod</em>()
+        85% of its time in calls to millerRabin()
+    millerRabin() spends:
+        99% of its time in calls to powMod<em>()   (always with a base of 2)
+    powMod</em>() spends:
+        94% of its time in calls to mont_()  (almost always with x==y)</p>
+<p>This suggests there are several ways to speed up this library slightly:</p>
+<pre><code>- convert powMod_ to use a Montgomery form <span class="hljs-keyword">of</span> k-ary <span class="hljs-built_in">window</span>
+  (<span class="hljs-keyword">or</span> maybe a Montgomery form <span class="hljs-keyword">of</span> sliding <span class="hljs-built_in">window</span>)
+    -- <span class="hljs-keyword">this</span> should especially focus <span class="hljs-literal">on</span> being fast <span class="hljs-keyword">when</span> raising <span class="hljs-number">2</span> to a
+       power mod n
+- convert randTruePrime_() to use a minimum r <span class="hljs-keyword">of</span> <span class="hljs-number">1</span>/<span class="hljs-number">3</span> instead <span class="hljs-keyword">of</span> <span class="hljs-number">1</span>/<span class="hljs-number">2</span>
+  <span class="hljs-reserved">with</span> the appropriate change to the test
+- tune the parameters <span class="hljs-keyword">in</span> randTruePrime_(), including c, m, <span class="hljs-keyword">and</span> recLimit
+- speed up the single <span class="hljs-keyword">loop</span> <span class="hljs-keyword">in</span> mont_() that takes <span class="hljs-number">95</span>% <span class="hljs-keyword">of</span> the runtime,
+  perhaps <span class="hljs-keyword">by</span> reducing checking within the <span class="hljs-keyword">loop</span> <span class="hljs-keyword">when</span> all the parameters are
+  the same length.
+</code></pre><p>There are several ideas that look like they wouldn’t help much at all:</p>
+<ul>
+<li>replacing trial division in randTruePrime_() with a sieve (that speeds up
+something taking almost no time anyway)</li>
+<li>increase bpe from 15 to 30 (that would help if we had a 32<em>32-&gt;64
+multiplier, but not with JavaScript’s 32</em>32-&gt;32)</li>
+<li>speeding up mont<em>(x,y,n,np) when x==y by doing a non-modular,
+non-Montgomery square followed by a Montgomery reduction.
+The intermediate answer will be twice as long as x, so that
+method would be slower.  This is unfortunate because the code currently
+spends almost all of its time doing mont</em>(x,x,…),
+both for randTruePrime<em>() and powMod</em>().  A faster method for Montgomery
+squaring would have a large impact on the speed of randTruePrime<em>() and
+powMod</em>().  HAC has a couple of poorly-worded sentences that seem to
+imply it’s faster to do a non-modular square followed by a single
+Montgomery reduction, but that’s obviously wrong.</li>
+</ul>
+
+            </div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

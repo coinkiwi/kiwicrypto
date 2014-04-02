@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>base64.coffee</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="base64.html">
+                base64.coffee
+              </a>
+            
+              
+              <a class="source" href="bigint.html">
+                bigint.coffee
+              </a>
+            
+              
+              <a class="source" href="kiwicrypto.html">
+                kiwicrypto.coffee
+              </a>
+            
+              
+              <a class="source" href="random.html">
+                random.coffee
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>base64.coffee</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-string">'use strict'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>constants</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>b64map = <span class="hljs-string">'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Represents utility class for Base64 encoding/decoding.
+See [<a href="http://tools.ietf.org/html/rfc4648">http://tools.ietf.org/html/rfc4648</a>]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Base64</span></span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Convert string to hex.
+@param str [String]
+@return [String] hex representation of the given string.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@stringToHex</span>: <span class="hljs-function"><span class="hljs-params">(str)</span> -&gt;</span>
+    str = <span class="hljs-string">''</span> <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> str?
+    hs = <span class="hljs-string">''</span>
+
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.str.length - <span class="hljs-number">1</span>]
+      hv = str.charCodeAt(i).toString(<span class="hljs-number">16</span>)
+      <span class="hljs-keyword">if</span> hv.length <span class="hljs-keyword">is</span> <span class="hljs-number">1</span>
+        hs += <span class="hljs-string">'0'</span> + hv
+      <span class="hljs-keyword">else</span>
+        hs += hv
+
+    <span class="hljs-keyword">return</span> hs</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>Convert hex to string.
+@param str [String] hex representation of a string
+@return [String] the actual string</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@hexToString</span>: <span class="hljs-function"><span class="hljs-params">(str)</span> -&gt;</span>
+    str = <span class="hljs-string">''</span> <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> str?
+    s = <span class="hljs-string">''</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.str.length - <span class="hljs-number">1</span>] <span class="hljs-keyword">by</span> <span class="hljs-number">2</span>
+      s += String.fromCharCode parseInt(str.substring(i, i + <span class="hljs-number">2</span>), <span class="hljs-number">16</span>)
+
+    <span class="hljs-keyword">return</span> s</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Converts/encodes plain string to base64.</p>
+<p>@param str [String] input string
+@return [String] base64 encoded string</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@encode</span>: <span class="hljs-function"><span class="hljs-params">(str)</span> -&gt;</span>
+    str = <span class="hljs-string">''</span> <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> str?
+    pad = <span class="hljs-string">''</span>
+    e = []</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>pad string to multiples of 3</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    c = str.length % <span class="hljs-number">3</span>
+    <span class="hljs-keyword">if</span> (c &gt; <span class="hljs-number">0</span>)
+      <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [c.<span class="hljs-number">.2</span>]
+        pad += <span class="hljs-string">'='</span>
+        str += <span class="hljs-string">'\0'</span>
+
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.str.length - <span class="hljs-number">1</span>] <span class="hljs-keyword">by</span> <span class="hljs-number">3</span>
+      o1 = str.charCodeAt i
+      o2 = str.charCodeAt i + <span class="hljs-number">1</span>
+      o3 = str.charCodeAt i + <span class="hljs-number">2</span>
+
+      bits = o1 &lt;&lt; <span class="hljs-number">16</span> | o2 &lt;&lt; <span class="hljs-number">8</span> | o3
+
+      h1 = bits &gt;&gt; <span class="hljs-number">18</span> &amp; <span class="hljs-number">0x3f</span>
+      h2 = bits &gt;&gt;<span class="hljs-number">12</span> &amp; <span class="hljs-number">0x3f</span>
+      h3 = bits &gt;&gt; <span class="hljs-number">6</span> &amp; <span class="hljs-number">0x3f</span>
+      h4 = bits &amp; <span class="hljs-number">0x3f</span>
+
+
+      e[i / <span class="hljs-number">3</span>] = b64map.charAt(h1) + b64map.charAt(h2) +
+        b64map.charAt(h3) + b64map.charAt(h4)
+
+    coded = e.join(<span class="hljs-string">''</span>)
+    coded.slice(<span class="hljs-number">0</span>, coded.length - pad.length) + pad</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Converts/decodes base64 encoded string to plain string.
+@param str [String] base64 encoded string
+@return [String] plain string</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-property">@decode</span>: <span class="hljs-function"><span class="hljs-params">(str)</span> -&gt;</span>
+    str = <span class="hljs-string">''</span> <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> str?
+    d = []
+
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.str.length - <span class="hljs-number">1</span>] <span class="hljs-keyword">by</span> <span class="hljs-number">4</span>
+      h1 = b64map.indexOf str.charAt i
+      h2 = b64map.indexOf str.charAt i + <span class="hljs-number">1</span>
+      h3 = b64map.indexOf str.charAt i + <span class="hljs-number">2</span>
+      h4 = b64map.indexOf str.charAt i + <span class="hljs-number">3</span>
+
+      bits = h1 &lt;&lt; <span class="hljs-number">18</span> | h2 &lt;&lt; <span class="hljs-number">12</span> | h3 &lt;&lt; <span class="hljs-number">6</span> | h4
+
+      o1 = bits &gt;&gt;&gt; <span class="hljs-number">16</span> &amp; <span class="hljs-number">0xff</span>
+      o2 = bits &gt;&gt;&gt; <span class="hljs-number">8</span> &amp; <span class="hljs-number">0xff</span>
+      o3 = bits &amp; <span class="hljs-number">0xff</span>
+
+      d[i / <span class="hljs-number">4</span>] = String.fromCharCode o1, o2, o3
+
+      <span class="hljs-keyword">if</span> h4 <span class="hljs-keyword">is</span> <span class="hljs-number">0x40</span>
+        d[i / <span class="hljs-number">4</span>] = String.fromCharCode o1, o2
+      <span class="hljs-keyword">if</span> h3 <span class="hljs-keyword">is</span> <span class="hljs-number">0x40</span>
+        d[i / <span class="hljs-number">4</span>] = String.fromCharCode o1
+
+    d.join(<span class="hljs-string">''</span>)
+
+
+<span class="hljs-built_in">exports</span>.Base64 = Base64</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
