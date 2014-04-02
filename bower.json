@@ -1,0 +1,34 @@
+{
+  "name": "kiwicrypto",
+  "version": "0.0.1",
+  "homepage": "http://coinkiwi.github.io/kiwicrypto",
+  "authors": [
+      {
+          "name": "CoinKiwi",
+          "email": "info@coinkiwi.com",
+          "homepage": "http://coinkiwi.com"
+      }
+  ],
+  "description": "Pure javascript cryptographic library. To be used \
+    in browsers. Supports: base64, RC4, RSA, SHA1.",
+  "main": "dist/kiwicrypto.min.js",
+  "keywords": [
+    "javascript", "coffeescript",
+    "cryptography", "client-side encryption",
+    "crypto","cryptojs", "jscrypto",
+    "rsa", "sha", "sha1", "sha256",
+    "base64", "hmac", "jwt", "rc4", "bigint", "biginteger"
+  ],
+  "license": "BSD",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/coinkiwi/kiwicrypto.git"
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
