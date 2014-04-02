@@ -1,5 +1,13 @@
-Copyright (c) 2014, Coin Kiwi
-All rights reserved.
+
+Kiwicrypto:
+Copyright (c) 2013-2014 Mariusz Nowostawski
+
+
+Algorithms, and original JavaScript sources:
+Copyright (c) 2000-2009 Paul Johnston (sha1)
+Copyright (c) 2003-2004 Angel Marin (sha256)
+Copyright (c) 2005-2013 Tom Wu (jsbn, rng, rsa)
+
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
