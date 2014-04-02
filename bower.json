@@ -9,8 +9,7 @@
           "homepage": "http://coinkiwi.com"
       }
   ],
-  "description": "Pure javascript cryptographic library. To be used \
-    in browsers. Supports: base64, RC4, RSA, SHA1.",
+  "description": "Pure javascript cryptographic library. To be used in browsers. Supports: base64, RC4, RSA, SHA1.",
   "main": "dist/kiwicrypto.min.js",
   "keywords": [
     "javascript", "coffeescript",
