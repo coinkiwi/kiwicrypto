@@ -63,8 +63,9 @@ for single-page AngularJS/Javascript applications. </p><h2 id="features">Feature
 <li>RSA public/private keys (work in progress)</li>
 </ul>
 <h2 id="how-to-use-it">How to use it</h2><p>To install it, use bower:</p><pre><code>bower install kiwicrypto --save
-</code></pre><p>To use it, import the main module:</p><pre><code>var crypto = require(&quot;KiwiCrypto&quot;);
-var encodedString = crypto.Base64.stringToBase64(&quot;hello world&quot;);
+</code></pre><p>To use it, import the module you need:</p><pre><code>var Base64 = require(&quot;Base64&quot;);
+var encodedString = Base64.encode(&quot;hello world&quot;); // returns base64-encoded string
+var originalString = Base64.decode(encodedString); // returns &quot;hello world&quot;
 </code></pre><p>See <a href="docs/index.html">API documentation</a> for more details.</p><h2 id="building-the-library">Building the library</h2><p>In the root folder of the library:</p><pre><code>grunt test          builds and tests the current codebase
 grunt build         builds and browserifies the modules
 grunt dist          prepares the distribution, minified/uglified version, with docs
@@ -85,7 +86,7 @@ See AUTHORS and LICENSE files for details.</p><h1 id="related-work">Related work
       </div>
     </div>
     <div id='footer'>
-  April 02, 14 19:52:48 by
+  April 21, 14 00:33:51 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>
