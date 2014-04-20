@@ -39,6 +39,8 @@ module.exports = (grunt) ->
             "./lib/base64.js:Base64"
             "./lib/random.js:Random"
             "./lib/bigint.js:BigInt"
+            "./lib/hmacsha256.js:HmacSHA256"
+            "./lib/sha256.js:SHA256"
           ]
           ignore: ['./lib/tests/*.js']
 
@@ -51,6 +53,8 @@ module.exports = (grunt) ->
             "./lib/base64.js:Base64"
             "./lib/random.js:Random"
             "./lib/bigint.js:BigInt"
+            "./lib/hmacsha256.js:HmacSHA256"
+            "./lib/sha256.js:SHA256"
           ]
           external: ['./lib/*.js']
           ignore: []
