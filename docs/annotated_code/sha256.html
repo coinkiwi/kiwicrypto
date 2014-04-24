@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>sha256.coffee</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="base64.html">
+                base64.coffee
+              </a>
+            
+              
+              <a class="source" href="bigint.html">
+                bigint.coffee
+              </a>
+            
+              
+              <a class="source" href="hmacsha256.html">
+                hmacsha256.coffee
+              </a>
+            
+              
+              <a class="source" href="kiwicrypto.html">
+                kiwicrypto.coffee
+              </a>
+            
+              
+              <a class="source" href="random.html">
+                random.coffee
+              </a>
+            
+              
+              <a class="source" href="sha256.html">
+                sha256.coffee
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>sha256.coffee</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-string">'use strict'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>A JavaScript implementation of the Secure Hash Algorithm, SHA-256
+Inspired by Angel Marin and Paul Johnston Javascript implementation</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SHA256</span></span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>character size
+bits per input character:
+8 - ASCII
+16 - Unicode</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  chrsz = <span class="hljs-number">8</span>
+  <span class="hljs-function"><span class="hljs-title">safe_add</span> = <span class="hljs-params">(x, y)</span> -&gt;</span>
+    lsw = (x &amp; <span class="hljs-number">0xFFFF</span>) + (y &amp; <span class="hljs-number">0xFFFF</span>)
+    msw = (x &gt;&gt; <span class="hljs-number">16</span>) + (y &gt;&gt; <span class="hljs-number">16</span>) + (lsw &gt;&gt; <span class="hljs-number">16</span>)
+    <span class="hljs-keyword">return</span> (msw &lt;&lt; <span class="hljs-number">16</span>) | (lsw &amp; <span class="hljs-number">0xFFFF</span>)
+
+  <span class="hljs-function"><span class="hljs-title">S</span> = <span class="hljs-params">(X, n)</span> -&gt;</span>
+    ( X &gt;&gt;&gt; n ) | (X &lt;&lt; (<span class="hljs-number">32</span> - n))
+
+  <span class="hljs-function"><span class="hljs-title">R</span> = <span class="hljs-params">(X, n)</span> -&gt;</span>
+    X &gt;&gt;&gt; n
+
+  <span class="hljs-function"><span class="hljs-title">Ch</span> = <span class="hljs-params">(x, y, z)</span> -&gt;</span>
+    (x &amp; y) ^ ((~x) &amp; z)
+
+  <span class="hljs-function"><span class="hljs-title">Maj</span> = <span class="hljs-params">(x, y, z)</span> -&gt;</span>
+    (x &amp; y) ^ (x &amp; z) ^ (y &amp; z)
+
+  <span class="hljs-function"><span class="hljs-title">Sigma0256</span> = <span class="hljs-params">(x)</span> -&gt;</span>
+    S(x, <span class="hljs-number">2</span>) ^ S(x, <span class="hljs-number">13</span>) ^ S(x, <span class="hljs-number">22</span>)
+
+  <span class="hljs-function"><span class="hljs-title">Sigma1256</span> = <span class="hljs-params">(x)</span> -&gt;</span>
+    S(x, <span class="hljs-number">6</span>) ^ S(x, <span class="hljs-number">11</span>) ^ S(x, <span class="hljs-number">25</span>)
+
+  <span class="hljs-function"><span class="hljs-title">Gamma0256</span> = <span class="hljs-params">(x)</span> -&gt;</span>
+    (S(x, <span class="hljs-number">7</span>) ^ S(x, <span class="hljs-number">18</span>) ^ R(x, <span class="hljs-number">3</span>))
+
+  <span class="hljs-function"><span class="hljs-title">Gamma1256</span> = <span class="hljs-params">(x)</span> -&gt;</span>
+    (S(x, <span class="hljs-number">17</span>) ^ S(x, <span class="hljs-number">19</span>) ^ R(x, <span class="hljs-number">10</span>))
+
+
+
+  <span class="hljs-attribute">core_sha256</span>: <span class="hljs-function"><span class="hljs-params">(m, l)</span> -&gt;</span>
+    K = <span class="hljs-keyword">new</span> Array(<span class="hljs-number">0x428A2F98</span>, <span class="hljs-number">0x71374491</span>, <span class="hljs-number">0xB5C0FBCF</span>, <span class="hljs-number">0xE9B5DBA5</span>, <span class="hljs-number">0x3956C25B</span>,
+      <span class="hljs-number">0x59F111F1</span>, <span class="hljs-number">0x923F82A4</span>, <span class="hljs-number">0xAB1C5ED5</span>, <span class="hljs-number">0xD807AA98</span>, <span class="hljs-number">0x12835B01</span>, <span class="hljs-number">0x243185BE</span>,
+      <span class="hljs-number">0x550C7DC3</span>, <span class="hljs-number">0x72BE5D74</span>, <span class="hljs-number">0x80DEB1FE</span>, <span class="hljs-number">0x9BDC06A7</span>, <span class="hljs-number">0xC19BF174</span>, <span class="hljs-number">0xE49B69C1</span>,
+      <span class="hljs-number">0xEFBE4786</span>, <span class="hljs-number">0xFC19DC6</span>, <span class="hljs-number">0x240CA1CC</span>, <span class="hljs-number">0x2DE92C6F</span>, <span class="hljs-number">0x4A7484AA</span>, <span class="hljs-number">0x5CB0A9DC</span>,
+      <span class="hljs-number">0x76F988DA</span>, <span class="hljs-number">0x983E5152</span>, <span class="hljs-number">0xA831C66D</span>, <span class="hljs-number">0xB00327C8</span>, <span class="hljs-number">0xBF597FC7</span>, <span class="hljs-number">0xC6E00BF3</span>,
+      <span class="hljs-number">0xD5A79147</span>, <span class="hljs-number">0x6CA6351</span>, <span class="hljs-number">0x14292967</span>, <span class="hljs-number">0x27B70A85</span>, <span class="hljs-number">0x2E1B2138</span>, <span class="hljs-number">0x4D2C6DFC</span>,
+      <span class="hljs-number">0x53380D13</span>, <span class="hljs-number">0x650A7354</span>, <span class="hljs-number">0x766A0ABB</span>, <span class="hljs-number">0x81C2C92E</span>, <span class="hljs-number">0x92722C85</span>, <span class="hljs-number">0xA2BFE8A1</span>,
+      <span class="hljs-number">0xA81A664B</span>, <span class="hljs-number">0xC24B8B70</span>, <span class="hljs-number">0xC76C51A3</span>, <span class="hljs-number">0xD192E819</span>, <span class="hljs-number">0xD6990624</span>, <span class="hljs-number">0xF40E3585</span>,
+      <span class="hljs-number">0x106AA070</span>, <span class="hljs-number">0x19A4C116</span>, <span class="hljs-number">0x1E376C08</span>, <span class="hljs-number">0x2748774C</span>, <span class="hljs-number">0x34B0BCB5</span>, <span class="hljs-number">0x391C0CB3</span>,
+      <span class="hljs-number">0x4ED8AA4A</span>, <span class="hljs-number">0x5B9CCA4F</span>, <span class="hljs-number">0x682E6FF3</span>, <span class="hljs-number">0x748F82EE</span>, <span class="hljs-number">0x78A5636F</span>, <span class="hljs-number">0x84C87814</span>,
+      <span class="hljs-number">0x8CC70208</span>, <span class="hljs-number">0x90BEFFFA</span>, <span class="hljs-number">0xA4506CEB</span>, <span class="hljs-number">0xBEF9A3F7</span>, <span class="hljs-number">0xC67178F2</span>)
+
+    HASH = <span class="hljs-keyword">new</span> Array(<span class="hljs-number">0x6A09E667</span>, <span class="hljs-number">0xBB67AE85</span>, <span class="hljs-number">0x3C6EF372</span>, <span class="hljs-number">0xA54FF53A</span>,
+      <span class="hljs-number">0x510E527F</span>, <span class="hljs-number">0x9B05688C</span>, <span class="hljs-number">0x1F83D9AB</span>, <span class="hljs-number">0x5BE0CD19</span>)
+    W = <span class="hljs-keyword">new</span> Array(<span class="hljs-number">64</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>a, b, c, d, e, f, g, h, i, j
+T1, T2;
+append padding</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    m[l &gt;&gt; <span class="hljs-number">5</span>] |= <span class="hljs-number">0x80</span> &lt;&lt; (<span class="hljs-number">24</span> - l % <span class="hljs-number">32</span>)
+    m[((l + <span class="hljs-number">64</span> &gt;&gt; <span class="hljs-number">9</span>) &lt;&lt; <span class="hljs-number">4</span>) + <span class="hljs-number">15</span>] = l
+
+    i = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">while</span> i &lt; m.length
+      a = HASH[<span class="hljs-number">0</span>]
+      b = HASH[<span class="hljs-number">1</span>]
+      c = HASH[<span class="hljs-number">2</span>]
+      d = HASH[<span class="hljs-number">3</span>]
+      e = HASH[<span class="hljs-number">4</span>]
+      f = HASH[<span class="hljs-number">5</span>]
+      g = HASH[<span class="hljs-number">6</span>]
+      h = HASH[<span class="hljs-number">7</span>]
+      <span class="hljs-keyword">for</span> j <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span><span class="hljs-number">.63</span>]
+        <span class="hljs-keyword">if</span> (j &lt; <span class="hljs-number">16</span>) <span class="hljs-keyword">then</span> W[j] = m[j + i]
+        <span class="hljs-keyword">else</span> W[j] = safe_add(safe_add(safe_add(Gamma1256(W[j - <span class="hljs-number">2</span>]),
+          W[j - <span class="hljs-number">7</span>]),
+          Gamma0256(W[j - <span class="hljs-number">15</span>])),
+          W[j - <span class="hljs-number">16</span>])
+        T1 = safe_add(safe_add(safe_add(safe_add(
+          h, Sigma1256(e)), Ch(e, f, g)), K[j]), W[j])
+        T2 = safe_add(Sigma0256(a), Maj(a, b, c))
+        h = g
+        g = f
+        f = e
+        e = safe_add(d, T1)
+        d = c
+        c = b
+        b = a
+        a = safe_add(T1, T2)
+
+      HASH[<span class="hljs-number">0</span>] = safe_add(a, HASH[<span class="hljs-number">0</span>])
+      HASH[<span class="hljs-number">1</span>] = safe_add(b, HASH[<span class="hljs-number">1</span>])
+      HASH[<span class="hljs-number">2</span>] = safe_add(c, HASH[<span class="hljs-number">2</span>])
+      HASH[<span class="hljs-number">3</span>] = safe_add(d, HASH[<span class="hljs-number">3</span>])
+      HASH[<span class="hljs-number">4</span>] = safe_add(e, HASH[<span class="hljs-number">4</span>])
+      HASH[<span class="hljs-number">5</span>] = safe_add(f, HASH[<span class="hljs-number">5</span>])
+      HASH[<span class="hljs-number">6</span>] = safe_add(g, HASH[<span class="hljs-number">6</span>])
+      HASH[<span class="hljs-number">7</span>] = safe_add(h, HASH[<span class="hljs-number">7</span>])
+
+      i += <span class="hljs-number">16</span>
+
+    <span class="hljs-keyword">return</span> HASH
+
+
+  <span class="hljs-attribute">str2binb</span>: <span class="hljs-function"><span class="hljs-params">(str)</span> -&gt;</span>
+    bin = Array()
+    mask = (<span class="hljs-number">1</span> &lt;&lt; chrsz) - <span class="hljs-number">1</span>
+    i = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">while</span> i &lt; str.length * chrsz
+      bin[i &gt;&gt; <span class="hljs-number">5</span>] |= (str.charCodeAt(i / chrsz) &amp; mask) &lt;&lt; (<span class="hljs-number">24</span> - i % <span class="hljs-number">32</span>)
+      i += chrsz
+
+    <span class="hljs-keyword">return</span> bin
+
+  <span class="hljs-attribute">array2binb</span>: <span class="hljs-function"><span class="hljs-params">(arr)</span> -&gt;</span>
+    bin = Array()
+    mask = (<span class="hljs-number">1</span> &lt;&lt; chrsz) - <span class="hljs-number">1</span>
+    i = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">while</span> i &lt; arr.length * chrsz
+      bin[i &gt;&gt; <span class="hljs-number">5</span>] |= (arr[i / chrsz] &amp; mask) &lt;&lt; (<span class="hljs-number">24</span> - i % <span class="hljs-number">32</span>)
+      i += chrsz
+
+    <span class="hljs-keyword">return</span> bin
+
+
+  <span class="hljs-attribute">binb2hex</span>: <span class="hljs-function"><span class="hljs-params">(binarray)</span> -&gt;</span>
+    hex_tab = <span class="hljs-string">"0123456789abcdef"</span>
+    str = <span class="hljs-string">""</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> [<span class="hljs-number">0.</span>.(binarray.length * <span class="hljs-number">4</span>) - <span class="hljs-number">1</span>]
+      str += hex_tab.charAt((binarray[i &gt;&gt; <span class="hljs-number">2</span>] &gt;&gt; ((<span class="hljs-number">3</span> - i % <span class="hljs-number">4</span>) * <span class="hljs-number">8</span> + <span class="hljs-number">4</span>)) &amp; <span class="hljs-number">0xF</span>) +
+        hex_tab.charAt((binarray[i &gt;&gt; <span class="hljs-number">2</span>] &gt;&gt; ((<span class="hljs-number">3</span> - i % <span class="hljs-number">4</span>) * <span class="hljs-number">8</span>)) &amp; <span class="hljs-number">0xF</span>)
+
+    <span class="hljs-keyword">return</span> str
+
+  <span class="hljs-attribute">hash</span>: <span class="hljs-function"><span class="hljs-params">(s)</span> -&gt;</span> <span class="hljs-property">@binb2hex</span>(<span class="hljs-property">@core_sha256</span>(<span class="hljs-property">@str2binb</span>(s), s.length * chrsz))
+
+
+<span class="hljs-built_in">exports</span>.SHA256 = SHA256</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
