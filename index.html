@@ -87,6 +87,8 @@ for single-page AngularJS/Javascript applications. </p>
 <ul>
 <li>base64 (done)</li>
 <li>RC4 and random number generation</li>
+<li>SHA2 256bit hashing</li>
+<li>HMAC with SHA2-256</li>
 <li>Big Integers (almost done)</li>
 <li>RSA public/private keys (work in progress)</li>
 </ul><h2>
@@ -104,6 +106,13 @@ encodedString = Base64.encode 'hello world'
 originalString = Base64.decode encodedString
 </code></pre>
 
+<pre><code>{ SHA256 } = require 'SHA256'
+sha256 = new SHA256()
+hashInHex = sha256.hash 'hello world'
+</code></pre>
+
+
+<p>See tests for examples of how to use various components of the library.</p>
 <p>See <a href="docs/index.html">API documentation</a> for more details.</p>
 
 <h2>
