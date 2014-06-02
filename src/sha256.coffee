@@ -105,6 +105,16 @@ class SHA256
     return HASH
 
 
+  hex2ascii: (hexx) ->
+    hex = hexx.toString()
+    str = ''
+    i = 0
+    while i < hex.length
+      str += String.fromCharCode(parseInt(hex.substr(i, 2), 16))
+      i = i + 2
+    return str
+
+
   str2binb: (str) ->
     bin = Array()
     mask = (1 << chrsz) - 1
