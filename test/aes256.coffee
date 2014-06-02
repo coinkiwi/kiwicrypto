@@ -1,30 +1,108 @@
 
 describe 'AES256 module', () ->
 
+  describe 'incrementCounterBlock', () ->
 
-  it 'it encodes and then decodes to the same input', () ->
-    { AES256 } = require 'AES256'
-    aes256 = new AES256()
-    input = 'a8G+4i5An5bpPX4Rc5MXKg=='
-    key = 'YD3rEBXKcb4rc67whX13gR81LAc7YQjXLZgQowkU3/Q='
-    h = aes256.encrypt input, key
-    expect(h).not.toBe(null)
+    incrementCounterBlock = undefined
 
-    input2 = aes256.decrypt h, key
-    expect(input).toEqual(input2)
+    beforeEach () ->
+      { incrementCounterBlock } = require 'AES256'
+
+    it 'works for 0', () ->
+      cb = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      expect(cb.length).toEqual(16)
+      for i in [0..15]
+        expect(cb[i]).toEqual(0)
+
+      incrementCounterBlock(cb)
+      for i in [0..14]
+        expect(cb[i]).toEqual(0)
+
+      expect(cb[15]).toEqual(1)
+
+    it 'works for 200', () ->
+      cb = [200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 200]
+      expect(cb.length).toEqual(16)
+      for i in [1..14]
+        expect(cb[i]).toEqual(0)
+      expect(cb[0]).toEqual(200)
+      expect(cb[15]).toEqual(200)
+
+      incrementCounterBlock(cb)
+      for i in [1..14]
+        expect(cb[i]).toEqual(0)
+
+      expect(cb[0]).toEqual(200)
+      expect(cb[15]).toEqual(201)
+
+    it 'works for 255', () ->
+      cb = [200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255]
+      expect(cb.length).toEqual(16)
+      for i in [1..13]
+        expect(cb[i]).toEqual(0)
+
+      expect(cb[0]).toEqual(200)
+      expect(cb[14]).toEqual(255)
+      expect(cb[15]).toEqual(255)
+
+      incrementCounterBlock(cb)
+      for i in [1..12]
+        expect(cb[i]).toEqual(0)
+
+      expect(cb[0]).toEqual(200)
+      expect(cb[13]).toEqual(1)
+      expect(cb[14]).toEqual(0)
+      expect(cb[15]).toEqual(0)
+
+    it 'works for border case', () ->
+      cb = new Array(16)
+      for i in [0..15]
+        cb[i] = 0xff
+
+      incrementCounterBlock(cb)
+
+      for i in [0..15]
+        expect(cb[i]).toEqual(0)
 
 
-  it 'it encodes according to SPEC NIST PUB sp800-38a, F.1.5', () ->
-    { AES256 } = require 'AES256'
-    aes256 = new AES256()
-    i = 'a8G+4i5An5bpPX4Rc5MXKq4tilceA6ycnrdvrEWvjl' +
-      'EwyBxGo1zkEeX7wRkaClLv9p8kRd9PmxetK0F75mw3EA=='
 
-    key = 'YD3rEBXKcb4rc67whX13gR81LAc7YQjXLZgQowkU3/Q='
 
-    result = '8+7RvbXSoDwGS1p+PbGB+FkcyxDUEO0m3FunSjE2K' +
-      'HC27SG5nKb0+fFT57G+r+0dIzBLejn58/8GfY2PniTsxw=='
+  describe 'aes', () ->
 
-    h = aes256.encrypt i, key
+    it 'encodes and then decodes to the same input', () ->
+      { SHA256 } = require 'SHA256'
+      { AES256 } = require 'AES256'
+      sha256 = new SHA256()
+      aes256 = new AES256()
+      input = 'aa'
+      key = sha256.hash('mama')
+      h = aes256.encrypt(input, key)
+      expect(h).not.toBe(null)
+      input2 = aes256.decrypt(h, key)
+      expect(input).toEqual(new Buffer(input2, 'hex').toString('ascii'))
 
-    expect(h).toEqual(result)
+
+    it 'decodes the AES-256 test vector 1', () ->
+      { AES256 } = require 'AES256'
+      aes256 = new AES256()
+      secret =
+        '603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4'
+      iv = 'f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff'
+      cipher = '601ec313775789a5b7a7f504bbf3d228'
+      plain = '6bc1bee22e409f96e93d7e117393172a'
+      expect(aes256.decrypt(iv + cipher, secret)).toEqual(plain)
+
+
+    it 'decodes the AES-256 test vector 2', () ->
+      { AES256 } = require 'AES256'
+      aes256 = new AES256()
+      secret =
+        '603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4'
+      iv = 'f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff'
+      cipher =
+        '601ec313775789a5b7a7f504bbf3d228f443e3ca4d62b59aca84e990cacaf5c5'
+      plain =
+        '6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51'
+      h = aes256.decrypt(iv + cipher, secret)
+      for i in [0..(h.length - 1)]
+        expect(h[i]).toEqual(plain[i])

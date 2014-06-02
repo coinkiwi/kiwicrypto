@@ -1,15 +1,42 @@
 
 #
-# Adapted from work of Chris Veness. Original work done in JavaScript
+# Author: Mariusz Nowostawski (modifications)
+# All modifications in public domain.
+#
+# Original implementation by Chris Veness in JavaScript
 # http://www.movable-type.co.uk/scripts/aes.html
 #
 
 
 
 
+#
+# @param arr CounterBlock, of 16-bytes
+#
+incrementCounterBlock = (cb) ->
+  index = 15
+  cb[index] = cb[index] + 1
+  while index > 0 and cb[index] > 0xff
+    cb[index] = 0
+    index = index - 1
+    cb[index] = cb[index] + 1
+
+  cb[index] = 0 if cb[index] > 0xff
+  cb
+
+#
+#
+#
+byteToHex = (byte) ->
+  t = byte.toString(16)
+  t = '0' + t if byte < 10
+  return t
+
+
 class AES256
 
   { Base64 } = require 'Base64'
+  { SHA256 } = require 'SHA256'
 
 
   #####################################################################
@@ -232,24 +259,24 @@ class AES256
   # Unicode multi-byte character safe
   #
   # @param {String} plaintext Source text to be encrypted
-  # @param {String} key the secret key, the encryption string in base64
-  # @returns {string}         Encrypted text
+  # @param {String} secret Encryption string in hex
+  # @returns {string} Encrypted text, in HEX format.
+  #    The CounterBlock is passed as first 16 bytes
   #
-  encrypt: (plaintext, key) ->
+  encrypt: (plaintext, secret) ->
     blockSize = 16 # block size fixed at 16 bytes / 128 bits (Nb=4) for AES
-    # standard allows 128/192/256 bit keys, adjust nBits accordingly
+    # standard allows 128/192/256 bit keys, we only use 256
 
-    plaintext = Base64.decode(plaintext)
+    key = new Buffer(secret, 'hex')
 
-    key = Base64.decode(key)
-    if key.length isnt 32 # key 256bits
-      # ERROR, we cannot do the required encryption, we need key of 32-bytes
+    if key.length isnt 32 # key must be 256bits
+      console.log 'AES256 encrypt() ERROR: wrong key length', key.length
       return null
 
     # initialise 1st 8 bytes of counter block with nonce
     # (NIST SP800-38A §B.2): [0-1] = millisec,
-    # [2-3] = random, [4-7] = seconds, together giving full sub-millisec
-    # uniqueness up to Feb 2106
+    # [2-3] = random, [4-7] = seconds
+    # the remaining 8 bytes are random
 
     counterBlock = new Array(blockSize)
 
@@ -264,11 +291,13 @@ class AES256
       counterBlock[i + 2] = (nonceRnd >>> i * 8) & 0xff
     for i in [0..3]
       counterBlock[i + 4] = (nonceSec >>> i * 8) & 0xff
+    for i in [8..15]
+      counterBlock[i] = Math.floor(Math.random() * 0xff)
 
     # and convert it to a string to go on the front of the ciphertext
     ctrTxt = ''
-    for i in [0..7]
-      ctrTxt += String.fromCharCode(counterBlock[i])
+    for i in [0..15]
+      ctrTxt += byteToHex(counterBlock[i])
 
     # generate key schedule - an expansion of the key into distinct
     # Key Rounds for each round
@@ -278,15 +307,6 @@ class AES256
     ciphertxt = new Array(blockCount)  # ciphertext as array of strings
 
     for b in [0..(blockCount - 1)]
-      # set counter (block #) in last 8 bytes of counter block
-      # (leaving nonce in 1st 8 bytes)
-      # done in two stages for 32-bit ops: using two words allows
-      # us to go past 2^32 blocks (68GB)
-      for c in [0..3]
-        counterBlock[15 - c] = (b >>> c * 8) & 0xff
-      for c in [0..3]
-        counterBlock[15 - c - 4] = (b / 0x100000000 >>> c * 8)
-
       # encrypt counter block
       cipherCntr = cipher(counterBlock, keySchedule)
 
@@ -301,52 +321,52 @@ class AES256
       for i in [0..(blockLength - 1)]
         # xor plaintext with ciphered counter char-by-char
         cipherChar[i] = cipherCntr[i] ^ plaintext.charCodeAt(b * blockSize + i)
-        cipherChar[i] = String.fromCharCode(cipherChar[i])
+        cipherChar[i] = byteToHex(cipherChar[i])
 
       ciphertxt[b] = cipherChar.join('')
+
+      incrementCounterBlock(counterBlock)
+
 
     # Array.join is more efficient than repeated string concatenation in IE
     ciphertext = ctrTxt + ciphertxt.join('')
 
-    #encode in base64
-    ciphertext = Base64.encode(ciphertext)
-
     return ciphertext
 
 
+
   #
   #
-  # Decrypt a text encrypted by AES in counter mode of operation
+  # returns the HEX representation of the plain text
   #
-  # @param {String} ciphertext Source text to be encrypted
-  # @param {String} key  the secret key, the encryption string, in base64
-  # @returns {String}          Decrypted text
-  #
-  decrypt: (ciphertext, key) ->
+  decrypt: (ciphertext, secret) ->
     blockSize = 16
 
-    ciphertext = Base64.decode(ciphertext)
-    key = Base64.decode(key)
+    ciphertext = new Buffer(ciphertext, 'hex')
+    key = new Buffer(secret, 'hex')
+
     if key.length isnt 32
-      console.err "######### ERROR, key length is ", key.length
+      console.log "AES256 decrypt() ERROR: wrong key length ", key.length
       # ERROR, we cannot do the required encryption, we need key of 32-bytes
       return null
 
 
     # recover nonce from 1st 8 bytes of ciphertext
-    counterBlock = new Array(8)
-    ctrTxt = ciphertext.slice(0, 8)
-    for i in [0..7]
-      counterBlock[i] = ctrTxt.charCodeAt(i)
+    counterBlock = new Array(16)
+    ctrTxt = ciphertext.slice(0, 16)
+    for i in [0..15]
+      counterBlock[i] = ctrTxt.readUInt8(i)
 
     # generate key schedule
     keySchedule = keyExpansion(key)
 
-    # separate ciphertext into blocks (skipping past initial 8 bytes)
-    nBlocks = Math.ceil((ciphertext.length - 8) / blockSize)
+    # separate ciphertext into blocks (skipping past initial 16 bytes)
+    nBlocks = Math.ceil((ciphertext.length - 16) / blockSize)
     ct = new Array(nBlocks)
+
     for b in [0..(nBlocks - 1)]
-      ct[b] = ciphertext.slice(8 + b * blockSize, 8 + b * blockSize + blockSize)
+      ct[b] = ciphertext.slice(16 + b * blockSize
+        , 16 + b * blockSize + blockSize)
     # ciphertext is now array of block-length strings
     ciphertext = ct
 
@@ -355,32 +375,28 @@ class AES256
     plaintxt = new Array(ciphertext.length)
 
     for b in [0..(nBlocks - 1)]
-      # set counter (block #) in last 8 bytes of counter block
-      # (leaving nonce in 1st 8 bytes)
-      for c in [0..3]
-        counterBlock[15 - c] = ((b) >>> c * 8) & 0xff
-      for c in [0..3]
-        counterBlock[15 - c - 4] =
-          (((b + 1) / 0x100000000 - 1) >>> c * 8) & 0xff
 
       # encrypt counter block
       cipherCntr = cipher(counterBlock, keySchedule)
 
       plaintxtByte = new Array(ciphertext[b].length)
+
       for i in [0..ciphertext[b].length - 1]
         # xor plaintxt with ciphered counter byte-by-byte
-        plaintxtByte[i] = cipherCntr[i] ^ ciphertext[b].charCodeAt(i)
-        plaintxtByte[i] = String.fromCharCode(plaintxtByte[i])
+        plaintxtByte[i] = cipherCntr[i] ^ ciphertext[b].readUInt8(i)
+        plaintxtByte[i] = byteToHex plaintxtByte[i]
 
       plaintxt[b] = plaintxtByte.join('')
 
+      incrementCounterBlock(counterBlock)
+
     # join array of blocks into single plaintext string
-    plaintext = plaintxt.join('')
+    plaintxt = plaintxt.join('')
 
-    # encode the result as Base64
-    plaintext = Base64.encode(plaintext)
+    return plaintxt
 
-    return plaintext
+
 
 
 exports.AES256 = AES256
+exports.incrementCounterBlock = incrementCounterBlock
