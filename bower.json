@@ -1,6 +1,6 @@
 {
   "name": "kiwicrypto",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "homepage": "http://coinkiwi.github.io/kiwicrypto",
   "authors": [
       {
@@ -15,7 +15,8 @@
     "javascript", "coffeescript",
     "cryptography", "client-side encryption",
     "crypto","cryptojs", "jscrypto",
-    "rsa", "sha", "sha1", "sha256",
+    "rsa", "sha", "sha1", "sha256", 
+    "AES", "AES CRT", "AES 256",
     "base64", "hmac", "jwt", "rc4", "bigint", "biginteger"
   ],
   "license": "BSD",

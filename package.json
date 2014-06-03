@@ -1,8 +1,9 @@
 {
   "name": "kiwicrypto",
-  "description": "Pure javascript cryptographic library. To be used in browsers. Supports RSA, HMAC, base64, SHA1.",
-  "version": "0.0.1",
+  "description": "Pure javascript cryptographic library. To be used in browsers. Supports RSA, HMAC, base64, SHA1 and AES 256.",
+  "version": "0.1.0",
   "homepage": "http://coinkiwi.github.io/kiwicrypto",
+  "keywords": "RSA, HMAC, SHA1, AES, base64",
   "author": {
     "name": "Coin Kiwi",
     "url": "http://coinkiwi.github.io/kiwicrypto"
