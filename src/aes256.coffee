@@ -280,7 +280,7 @@ class AES256
 
     counterBlock = new Array(blockSize)
 
-    nonce = (new Date()).getTime();  # timestamp: milliseconds since 1-Jan-1970
+    nonce = (new Date()).getTime()  # timestamp: milliseconds since 1-Jan-1970
     nonceMs = nonce % 1000
     nonceSec = Math.floor(nonce / 1000)
     nonceRnd = Math.floor(Math.random() * 0xffff)
