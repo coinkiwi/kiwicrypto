@@ -19,6 +19,11 @@
           <div id="jump_page">
             
               
+              <a class="source" href="aes256.html">
+                aes256.coffee
+              </a>
+            
+              
               <a class="source" href="base64.html">
                 base64.coffee
               </a>
@@ -213,6 +218,16 @@ append padding</p>
       i += <span class="hljs-number">16</span>
 
     <span class="hljs-keyword">return</span> HASH
+
+
+  <span class="hljs-attribute">hex2ascii</span>: <span class="hljs-function"><span class="hljs-params">(hexx)</span> -&gt;</span>
+    hex = hexx.toString()
+    str = <span class="hljs-string">''</span>
+    i = <span class="hljs-number">0</span>
+    <span class="hljs-keyword">while</span> i &lt; hex.length
+      str += String.fromCharCode(parseInt(hex.substr(i, <span class="hljs-number">2</span>), <span class="hljs-number">16</span>))
+      i = i + <span class="hljs-number">2</span>
+    <span class="hljs-keyword">return</span> str
 
 
   <span class="hljs-attribute">str2binb</span>: <span class="hljs-function"><span class="hljs-params">(str)</span> -&gt;</span>

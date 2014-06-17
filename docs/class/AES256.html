@@ -19,91 +19,97 @@
       Index
     </a>
     &raquo;
-    <span class='title'>RC4</span>
+    <span class='title'>AES256</span>
   </div>
 </div>
     <div id='content'>
       <h1>
         Class:
-        RC4
+        AES256
       </h1>
       <table class='box'>
         <tr>
           <td>Defined in:</td>
-          <td>src&#47;random.coffee</td>
+          <td>src&#47;aes256.coffee</td>
         </tr>
       </table>
-      <h2>Overview</h2>
-      <div class='docstring'>
-  <p>Arcfour, RC4 implementation.
-<a href="http://en.wikipedia.org/wiki/RC4">http://en.wikipedia.org/wiki/RC4</a></p><p>POOL SIZE of 256 and modulo 256 operations are assumed.</p>
-</div>
-<div class='tags'>
-</div>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
   <li>
     <span class='signature'>
-      <a href='#init-dynamic'>
+      <a href='#encrypt-dynamic'>
         #
 (void)
-<b>init</b><span>(key)</span>
+<b>encrypt</b><span>(plaintext, secret)</span>
       </a>
     </span>
     <span class='desc'>
-      Initialize arcfour context from a key, an array of ints, each from [0..255] 
+      Encrypt a text using AES encryption in Counter mode of operation <p>Unicode multi-byte character safe</p><p>@returns {string} Encrypted text, in HEX format.</p>
     </span>
   </li>
   <li>
     <span class='signature'>
-      <a href='#next-dynamic'>
+      <a href='#decrypt-dynamic'>
         #
-(byte)
-<b>next</b><span>()</span>
+(void)
+<b>decrypt</b><span>(ciphertext, secret)</span>
       </a>
     </span>
     <span class='desc'>
-      Return next value 
+      returns the HEX representation of the plain text 
     </span>
   </li>
 </ul>
       <h2>Instance Method Details</h2>
       <div class='methods'>
   <div class='method_details'>
-    <p class='signature' id='init-dynamic'>
+    <p class='signature' id='encrypt-dynamic'>
       #
 (void)
-<b>init</b><span>(key)</span>
+<b>encrypt</b><span>(plaintext, secret)</span>
       <br>
     </p>
     <div class='docstring'>
-  <p>Initialize arcfour context from a key, an array of ints, each from [0..255]</p>
+  <p>Encrypt a text using AES encryption in Counter mode of operation</p><p>Unicode multi-byte character safe</p><p>@returns {string} Encrypted text, in HEX format.
+   The CounterBlock is passed as first 16 bytes</p>
 </div>
 <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>plaintext</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Source text to be encrypted </span>
+    </li>
+    <li>
+      <span class='name'>secret</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Encryption string in hex </span>
+    </li>
+  </ul>
 </div>
   </div>
   <div class='method_details'>
-    <p class='signature' id='next-dynamic'>
+    <p class='signature' id='decrypt-dynamic'>
       #
-(byte)
-<b>next</b><span>()</span>
+(void)
+<b>decrypt</b><span>(ciphertext, secret)</span>
       <br>
     </p>
     <div class='docstring'>
-  <p>Return next value</p>
+  <p>returns the HEX representation of the plain text</p>
 </div>
 <div class='tags'>
-  <h3>Returns:</h3>
-  <ul class='return'>
-    <li>
-      <span class='type'></span>
-      (
-        <tt>byte</tt>
-      )
-      &mdash;
-      <span class='desc'>new byte value from the sequence </span>
-    </li>
-  </ul>
 </div>
   </div>
 </div>
