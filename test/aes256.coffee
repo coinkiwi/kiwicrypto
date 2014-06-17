@@ -65,6 +65,23 @@ describe 'AES256 module', () ->
         expect(cb[i]).toEqual(0)
 
 
+  describe 'hex to byte array', () ->
+
+    hexStringToByteArray = undefined
+    byteArrayToHexString = undefined
+
+    beforeEach () ->
+      { hexStringToByteArray, byteArrayToHexString } = require 'AES256'
+
+    it 'converts 010203040a0b0c', () ->
+      t = '010203040a0b0c'
+      a = [1, 2, 3, 4, 10, 11, 12]
+      na = hexStringToByteArray t
+      nt = byteArrayToHexString a
+
+      expect(a).toEqual(na)
+      expect(t).toEqual(nt)
+
 
 
   describe 'aes', () ->

@@ -25,19 +25,39 @@ incrementCounterBlock = (cb) ->
   cb
 
 #
-#
+# converts a single byte into a hex representation (padded to 2-digits)
+# @param byte byte
 #
 byteToHex = (byte) ->
   t = byte.toString(16)
-  t = '0' + t if byte < 10
+  t = '0' + t if byte < 16
   return t
+
+#
+# converts a hex string into array of bytes
+#
+hexStringToByteArray = (str) ->
+  result = []
+  while str.length >= 2
+    result.push(parseInt(str.substring(0, 2), 16))
+    str = str.substring(2, str.length)
+
+  return result
+
+#
+# converts a byte array to hex string
+#
+byteArrayToHexString = (barr) ->
+  result = new Array()
+  for b in barr
+    result.push byteToHex(b)
+
+  return result.join('')
+
+
 
 
 class AES256
-
-  { Base64 } = require 'Base64'
-  { SHA256 } = require 'SHA256'
-
 
   #####################################################################
   #
@@ -267,7 +287,7 @@ class AES256
     blockSize = 16 # block size fixed at 16 bytes / 128 bits (Nb=4) for AES
     # standard allows 128/192/256 bit keys, we only use 256
 
-    key = new Buffer(secret, 'hex')
+    key = hexStringToByteArray(secret)
 
     if key.length isnt 32 # key must be 256bits
       console.log 'AES256 encrypt() ERROR: wrong key length', key.length
@@ -342,8 +362,8 @@ class AES256
   decrypt: (ciphertext, secret) ->
     blockSize = 16
 
-    ciphertext = new Buffer(ciphertext, 'hex')
-    key = new Buffer(secret, 'hex')
+    ciphertext = hexStringToByteArray(ciphertext)
+    key = hexStringToByteArray(secret)
 
     if key.length isnt 32
       console.log "AES256 decrypt() ERROR: wrong key length ", key.length
@@ -355,7 +375,7 @@ class AES256
     counterBlock = new Array(16)
     ctrTxt = ciphertext.slice(0, 16)
     for i in [0..15]
-      counterBlock[i] = ctrTxt.readUInt8(i)
+      counterBlock[i] = ctrTxt[i]
 
     # generate key schedule
     keySchedule = keyExpansion(key)
@@ -383,7 +403,7 @@ class AES256
 
       for i in [0..ciphertext[b].length - 1]
         # xor plaintxt with ciphered counter byte-by-byte
-        plaintxtByte[i] = cipherCntr[i] ^ ciphertext[b].readUInt8(i)
+        plaintxtByte[i] = cipherCntr[i] ^ ciphertext[b][i]
         plaintxtByte[i] = byteToHex plaintxtByte[i]
 
       plaintxt[b] = plaintxtByte.join('')
@@ -397,6 +417,13 @@ class AES256
 
 
 
+## public API
 
 exports.AES256 = AES256
+
+
+## these are only exported for testing purposes
+
 exports.incrementCounterBlock = incrementCounterBlock
+exports.hexStringToByteArray = hexStringToByteArray
+exports.byteArrayToHexString = byteArrayToHexString
