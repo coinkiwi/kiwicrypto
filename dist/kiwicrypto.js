@@ -2,7 +2,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 module.exports=require('DXGQ/B');
 },{}],"DXGQ/B":[function(require,module,exports){
 (function() {
-  var AES256, byteArrayToHexString, byteToHex, hexStringToByteArray, incrementCounterBlock;
+  var AES256, byteArrayToHexString, byteToHex, hexStringToAscii, hexStringToByteArray, incrementCounterBlock;
 
   incrementCounterBlock = function(cb) {
     var index;
@@ -36,6 +36,16 @@ module.exports=require('DXGQ/B');
       str = str.substring(2, str.length);
     }
     return result;
+  };
+
+  hexStringToAscii = function(str) {
+    var result;
+    result = new Array();
+    while (str.length >= 2) {
+      result.push(String.fromCharCode(parseInt(str.substring(0, 2), 16)));
+      str = str.substring(2, str.length);
+    }
+    return result.join('');
   };
 
   byteArrayToHexString = function(barr) {
@@ -283,12 +293,12 @@ module.exports=require('DXGQ/B');
 
   exports.hexStringToByteArray = hexStringToByteArray;
 
+  exports.hexStringToAscii = hexStringToAscii;
+
   exports.byteArrayToHexString = byteArrayToHexString;
 
 }).call(this);
 
-},{}],"Base64":[function(require,module,exports){
-module.exports=require('D+r4VZ');
 },{}],"D+r4VZ":[function(require,module,exports){
 (function() {
   'use strict';
@@ -391,8 +401,8 @@ module.exports=require('D+r4VZ');
 
 }).call(this);
 
-},{}],"BigInt":[function(require,module,exports){
-module.exports=require('R/V1wN');
+},{}],"Base64":[function(require,module,exports){
+module.exports=require('D+r4VZ');
 },{}],"R/V1wN":[function(require,module,exports){
 
 /*
@@ -1704,6 +1714,8 @@ module.exports=require('R/V1wN');
 
 }).call(this);
 
+},{}],"BigInt":[function(require,module,exports){
+module.exports=require('R/V1wN');
 },{}],"HmacSHA256":[function(require,module,exports){
 module.exports=require('akbUIo');
 },{}],"akbUIo":[function(require,module,exports){
@@ -1767,9 +1779,7 @@ module.exports=require('akbUIo');
 
 }).call(this);
 
-},{"SHA256":"EqKf60"}],"KiwiCrypto":[function(require,module,exports){
-module.exports=require('c9W1Ra');
-},{}],"c9W1Ra":[function(require,module,exports){
+},{"SHA256":"EqKf60"}],"c9W1Ra":[function(require,module,exports){
 
 /*
 Author: Mariusz Nowostawski, and others. See AUTHORS.
@@ -1791,7 +1801,11 @@ Copyright (C) 2014 Mariusz Nowostawski, and others. See LICENSE.
 
 }).call(this);
 
-},{"./aes256":"DXGQ/B","./base64":"D+r4VZ","./bigint":"R/V1wN","./hmacsha256":"akbUIo","./random":"M+uFHl","./sha256":"EqKf60"}],"M+uFHl":[function(require,module,exports){
+},{"./aes256":"DXGQ/B","./base64":"D+r4VZ","./bigint":"R/V1wN","./hmacsha256":"akbUIo","./random":"M+uFHl","./sha256":"EqKf60"}],"KiwiCrypto":[function(require,module,exports){
+module.exports=require('c9W1Ra');
+},{}],"Random":[function(require,module,exports){
+module.exports=require('M+uFHl');
+},{}],"M+uFHl":[function(require,module,exports){
 
 /*
 Author: Mariusz Nowostawski, and others. See AUTHORS.
@@ -1894,10 +1908,6 @@ Copyright (C) 2014 Mariusz Nowostawski, and others. See LICENSE.
 
 }).call(this);
 
-},{}],"Random":[function(require,module,exports){
-module.exports=require('M+uFHl');
-},{}],"SHA256":[function(require,module,exports){
-module.exports=require('EqKf60');
 },{}],"EqKf60":[function(require,module,exports){
 (function() {
   'use strict';
@@ -2054,4 +2064,6 @@ module.exports=require('EqKf60');
 
 }).call(this);
 
+},{}],"SHA256":[function(require,module,exports){
+module.exports=require('EqKf60');
 },{}]},{},["c9W1Ra"])

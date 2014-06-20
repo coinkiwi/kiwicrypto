@@ -83,6 +83,25 @@ describe 'AES256 module', () ->
       expect(t).toEqual(nt)
 
 
+  describe 'hex to ascii', () ->
+
+    hexStringToAscii = undefined
+
+    beforeEach () ->
+      { hexStringToAscii } = require 'AES256'
+
+    it 'converts: mariusz', () ->
+      expect(hexStringToAscii('6d61726975737a'))
+        .toEqual 'mariusz'
+
+    it 'converts: hello world!', () ->
+      expect(hexStringToAscii('48656c6c6f20776f726c6421'))
+        .toEqual 'Hello world!'
+
+    it 'converts: !@#$^@@#$OAEUIaeuo)({}', () ->
+      expect(hexStringToAscii('214023245e404023244f414555496165756f29287b7d'))
+      .toEqual '!@#$^@@#$OAEUIaeuo)({}'
+
 
   describe 'aes', () ->
 

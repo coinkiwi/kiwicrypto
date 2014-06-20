@@ -45,6 +45,17 @@ hexStringToByteArray = (str) ->
   return result
 
 #
+# Converts hexString to asciiString
+#
+hexStringToAscii = (str) ->
+  result = new Array()
+  while str.length >= 2
+    result.push(String.fromCharCode(parseInt(str.substring(0, 2), 16)))
+    str = str.substring(2, str.length)
+
+  return result.join('')
+
+#
 # converts a byte array to hex string
 #
 byteArrayToHexString = (barr) ->
@@ -356,6 +367,8 @@ class AES256
 
 
   #
+  # @param ciphertext as hex string
+  # @param secret as hex string
   #
   # returns the HEX representation of the plain text
   #
@@ -426,4 +439,5 @@ exports.AES256 = AES256
 
 exports.incrementCounterBlock = incrementCounterBlock
 exports.hexStringToByteArray = hexStringToByteArray
+exports.hexStringToAscii = hexStringToAscii
 exports.byteArrayToHexString = byteArrayToHexString
